@@ -1,0 +1,88 @@
+<?php
+
+namespace Application;
+
+$title = 'RESTfull PHP backend script for RIA (Rich Internet Application) / SPA (Single-page Application) frontend';
+$page['GET']['header'][] = <<<EOT
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <meta name="description" content="git@github.com:bermud-ru/phproll.git"/>
+    <meta name="author" content="Андрей Новиков <andrey@novikov.be>"/>
+    <link href="//netdna.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="/css/index.css" rel="stylesheet" />
+    <title>{$title}</title>
+    <script id="alert-box" type="text/x-template">
+    {% var opt = {error:[], message: 'spa приложения!'}; for (i in arguments) opt = Object.assign(opt, arguments[i]); %}
+    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+    {% for (var i in opt.error) { %}
+    <span class="result">{%=i %}</span> <span class="message">{%=opt.error[i] %}</span>
+    {% } %}
+    </script>
+</head>
+EOT;
+$date = date('Y');
+$inc = '';
+if (!empty($include)) array_walk_recursive($include, function($cnx, $tpl) use (&$inc) { $inc .= $cnx;});
+$page['GET']['body'][] = <<<EOT
+<body>
+<div id="app" role="application">
+    <div class="container" role="workspace">
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed">
+                    <span class="sr-only">Toggle navigation</span>
+                </button>
+                <a class="navbar-brand" href="//{$header['Host']}" ><span class="glyphicon glyphicon-list-alt"></span >&nbsp; Сервисы</a>
+            </div>
+            <div class="collapse navbar-collapse navbar-right">
+                <ul class="nav navbar-nav">
+                    <!-- li><a href="#help">Справка</a></li -->
+                    <li class="dropdown"><a class="dropdown-toggle" href="#">
+                        <span class="glyphicon glyphicon glyphicon-log-in"></span>&nbsp; Авторизоваться <span class="caret"></span></a>
+                        <ul class="dropdown-menu"><?php /*
+                            <!--<li class="disabled"><a href="#section41">Настройки</a></li>-->
+                            <!--<li class="disabled"><a href="#section41">Сменить пароль</a></li>--> */ ?>
+                            <li><a href="#" role="logout">Выход</a></li><?php /*
+                            <!--<li role="separator" class="divider"></li>-->
+                            <!--<li role="help" data-href="{$config['root']}/help.html"><a target="_blank">Справка</a></li>-->
+                            <!--<li class="disabled"><a href="#section41">Сообщить о проблеме</a></li>--> */ ?>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    $inc
+    
+    <div class="navbar-fixed-bottom row-fluid">
+        <div class="navbar-inner">
+            <div class="container">
+                <div class="copyright">&copy; Все права, $date</div>
+            </div>
+        </div>
+    </div>
+    
+</div>
+</div>
+<div class="alert alert-danger message" style="display: none;"></div>
+<div class="b-popup" style="display: none;">
+    <div class="b-popup-content"></div>
+</div>
+<div class="locker spinner" style="display: none;"></div>
+<script type="text/javascript" src="/js/jsroll.min.js" charset="UTF-8"></script>
+<script type="text/javascript" src="/js/jsroll.app.min.js" charset="UTF-8"></script>
+</body>
+EOT;
+$page['GET']['footer'][] = <<<EOT
+</html>
+EOT;
+array_walk_recursive($page[$_SERVER['REQUEST_METHOD']], function($item){ echo $item; });
+?>

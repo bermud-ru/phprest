@@ -1,0 +1,20 @@
+{
+  "repositories": [
+    {
+      "url": "git@github.com:bermud-ru/jsroll.git",
+      "type": "git"
+    }
+  ],
+  "require": {
+    "bermud-ru/jsroll":"*@dev"
+  },
+
+  "scripts": {
+    "post-install-cmd": [
+      "./vendor/bermud-ru/jsroll/post-install"
+    ],
+    "post-update-cmd": [
+      "./vendor/bermud-ru/jsroll/post-update"
+    ]
+  }
+}
