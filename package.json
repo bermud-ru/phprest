@@ -1,20 +1,21 @@
 {
   "repositories": [
     {
-      "url": "git@github.com:bermud-ru/jsroll.git",
+      "url": "git@github.com:bermud-ru/phprest.git",
       "type": "git"
     }
   ],
   "require": {
-    "bermud-ru/jsroll":"*@dev"
+    "bermud-ru/jsroll":"*@dev",
+    "bermud-ru/phproll":"*@dev"
   },
 
   "scripts": {
     "post-install-cmd": [
-      "./vendor/bermud-ru/jsroll/post-install"
+      "./vendor/bermud-ru/phprest/post-install"
     ],
     "post-update-cmd": [
-      "./vendor/bermud-ru/jsroll/post-update"
+      "./vendor/bermud-ru/phprest/post-update"
     ]
   }
 }

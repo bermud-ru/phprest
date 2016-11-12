@@ -8,12 +8,12 @@ echo "Post-install scripting ..."
 mkdir -p ./public/css
 mkdir -p ./public/js
 mkdir -p ./Application/view
-cp ./vendor/bermud-ru/phprest/public/index.php ./public/
-cp -n ./vendor/bermud-ru/phprest/config.php ./
+cp -n ./vendor/bermud-ru/phprest/public/index.php ./public/
+cp -rf ./vendor/bermud-ru/phprest/config.php ./
 cp -n ./vendor/bermud-ru/phprest/public/css/* ./public/css/
-#cp -n ./vendor/bermud-ru/phprest/public/js/* ./public/js/
+#cp -rf ./vendor/bermud-ru/phprest/public/js/* ./public/js/
 for js in ./vendor/bermud-ru/phprest/public/js/*
 do
- [ -f $js ] && cp -n $js ./public/js/
+ [ -f $js ] && cp -rf $js ./public/js/
 done
-cp -n ./vendor/bermud-ru/phprest/Application/view/* ./Application/view/
+cp -rf ./vendor/bermud-ru/phprest/Application/view/* ./Application/view/

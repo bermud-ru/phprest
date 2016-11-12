@@ -9,5 +9,5 @@ echo "Post-update scripting ..."
 #cp -n ./vendor/bermud-ru/phprest/public/js/* ./public/js/
 #for js in ./vendor/bermud-ru/phprest/public/js/*
 #do
-# [ -f $js ] && cp -n $js ./public/js/
+# [ -f $js ] && cp -rf $js ./public/js/
 #done
