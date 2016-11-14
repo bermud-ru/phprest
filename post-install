@@ -9,7 +9,11 @@ mkdir -p ./public/css
 mkdir -p ./public/js
 mkdir -p ./Application/view
 mkdir -p ./Application/models
+cp -rf ./vendor/bermud-ru/phprest/public/401.html ./public/
+cp -rf ./vendor/bermud-ru/phprest/public/500.html ./public/
+cp -rf ./vendor/bermud-ru/phprest/public/fivicon.ico ./public/
 cp -rf ./vendor/bermud-ru/phprest/public/index.php ./public/
+cp -rf ./vendor/bermud-ru/phprest/public/robots.txt ./public/
 cp -rf ./vendor/bermud-ru/phprest/config.php ./
 cp -n ./vendor/bermud-ru/phprest/public/css/* ./public/css/
 #cp -rf ./vendor/bermud-ru/phprest/public/js/* ./public/js/

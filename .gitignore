@@ -14,7 +14,6 @@ public/fonts/
 composer.lock
 vendor/
 *.jar
-*.ico
 ._.DS_Store
 .DS_Store
 ._*

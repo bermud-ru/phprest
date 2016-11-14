@@ -1,4 +1,4 @@
-# PHPRoll simple PHP backend script for RIA (Rich Internet Application) / SPA (Single-page Application) frontend
+# PHPRest rest PHP backend script for RIA (Rich Internet Application) / SPA (Single-page Application) frontend
 
 **composer.json**
 ```json

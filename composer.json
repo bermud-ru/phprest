@@ -80,7 +80,7 @@
   },
 
   "autoload": {
-    "classmap": ["Application/"]
+    "classmap": ["./Application/"]
   },
 
   "download": "https://github.com/bermud-ru/phprest/archive/master.zip"
