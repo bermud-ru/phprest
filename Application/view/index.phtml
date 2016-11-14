@@ -39,7 +39,7 @@ $page['GET']['body'][] = <<<EOT
                 <button type="button" class="navbar-toggle collapsed">
                     <span class="sr-only">Toggle navigation</span>
                 </button>
-                <a class="navbar-brand" href="//{$header['Host']}" ><span class="glyphicon glyphicon-list-alt"></span >&nbsp; Сервисы</a>
+                <a class="navbar-brand" href="//{$self->header['Host']}" ><span class="glyphicon glyphicon-list-alt"></span >&nbsp; PHPREST RESTfull PHP framework</a>
             </div>
             <div class="collapse navbar-collapse navbar-right">
                 <ul class="nav navbar-nav">
@@ -51,7 +51,7 @@ $page['GET']['body'][] = <<<EOT
                             <!--<li class="disabled"><a href="#section41">Сменить пароль</a></li>--> */ ?>
                             <li><a href="#" role="logout">Выход</a></li><?php /*
                             <!--<li role="separator" class="divider"></li>-->
-                            <!--<li role="help" data-href="{$config['root']}/help.html"><a target="_blank">Справка</a></li>-->
+                            <!--<li role="help" data-href="{$self->config['root']}/help.html"><a target="_blank">Справка</a></li>-->
                             <!--<li class="disabled"><a href="#section41">Сообщить о проблеме</a></li>--> */ ?>
                         </ul>
                     </li>
@@ -65,7 +65,7 @@ $page['GET']['body'][] = <<<EOT
     <div class="navbar-fixed-bottom row-fluid">
         <div class="navbar-inner">
             <div class="container">
-                <div class="copyright">&copy; Все права, $date</div>
+                <div class="copyright">&copy; Все права у Андрея Новикова, $date</div>
             </div>
         </div>
     </div>
