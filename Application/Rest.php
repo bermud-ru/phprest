@@ -25,14 +25,14 @@ class Rest
     /**
      * Rest constructor.
      *
-     * @param PHPRoll $owner
+     * @param \Application\PHPRoll $owner
      * @param array $opt
      */
     public function __construct(\Application\PHPRoll &$owner, array $opt)
     {
         $this->owner = $owner;
         $method = strtolower($_SERVER['REQUEST_METHOD']);
-        if (!isset($opt[$method]) && !isset($opt[$method]['action']) && is_callable($opt[$method]['action'])) {
+        if (!isset($opt[$method]) && !isset($opt[$method]['action']) && !is_callable($opt[$method]['action'])) {
             $this->error['404'] = "//$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI] action[$method] not supported";
         } else {
             $params= $opt[$method]['params'] ?? $opt['params'] ?? [];
