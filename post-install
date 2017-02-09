@@ -93,7 +93,7 @@ server {
         fastcgi_param  PATH_TRANSLATED  \$document_root\$fsn;
     }
 
-pro    location ~ /\. {
+    location ~ /\. {
         deny all;
         access_log off;
         log_not_found off;
