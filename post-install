@@ -26,7 +26,6 @@ do
 done
 cp -rf ./$vendor/Application/view/* ./Application/view/
 cp -rf ./$vendor/Application/models/* ./Application/models/
-cp -rf ./$vendor/setup/* ./setup/
 
 project="json.host"
 SSL_path=$(pwd)/setup/SSL
