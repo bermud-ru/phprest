@@ -10,7 +10,8 @@ mkdir -p ./public/css
 mkdir -p ./public/js
 mkdir -p ./Application/view
 mkdir -p ./Application/models
-mkdir -p ./setup
+mkdir -p ./setup/nginx
+mkdir -p ./setup/SSL
 cp -rf ./$vendor/public/401.html ./public/
 cp -rf ./$vendor/public/500.html ./public/
 cp -rf ./$vendor/public/favicon.ico ./public/
