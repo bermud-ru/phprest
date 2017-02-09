@@ -18,7 +18,6 @@ cp -rf ./$vendor/public/favicon.ico ./public/
 cp -rf ./$vendor/public/index.php ./public/
 cp -rf ./$vendor/public/robots.txt ./public/
 cp -rf ./$vendor/config.php ./
-cp -rf ./$vendor/init.sh ./
 cp -n ./$vendor/public/css/* ./public/css/
 #cp -rf ./$vendor/public/js/* ./public/js/
 for js in ./$vendor/public/js/*
@@ -97,7 +96,7 @@ server {
         fastcgi_param  PATH_TRANSLATED  \$document_root\$fsn;
     }
 
-    location ~ /\. {
+pro    location ~ /\. {
         deny all;
         access_log off;
         log_not_found off;
@@ -125,4 +124,17 @@ email=test@$DOMAIN
 
 openssl req -nodes -x509 -newkey rsa:2048 -keyout ./setup/SSL/nginx.key -out ./setup/SSL/nginx.crt -days 365 -subj "/C=$country/ST=$state/L=$locality/O=$organization/OU=$organizationalunit/CN=$commonname/emailAddress=$email"
 
-
+if [ ! -d ./.git ]; then
+echo "
+git init
+git add .
+git commit -m \"first commit\"
+echo \"<domein>:<user>/<reponame>.git\"
+read -r repo
+if [ ! -z \$repo ]; then
+git remote add origin git@\$repo
+git push -u origin master
+fi
+" > ./project.init.sh
+sh ./project.init.sh
+fi
