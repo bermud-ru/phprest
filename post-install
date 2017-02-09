@@ -31,22 +31,20 @@ project="json.host"
 SSL_path=$(pwd)/setup/SSL
 echo "
 server {
-    set \$project \"$project\";
-    # access_log /var/log/nginx/\$project.access.log combined;
-    # error_log /var/log/nginx/\$project.error.log warn;
+    # access_log /var/log/nginx/$project.access.log combined;
+    # error_log /var/log/nginx/$project.error.log warn;
 
-    server_name \$project.server www.\$project.server;
+    server_name $project.server www.$project.server;
 
     listen 80;
     return 302 https://\$server_name\$request_uri;
 }
 
 server {
-    set \$project \"$project\";
-    access_log /var/log/nginx/\$project.access.log combined;
-    error_log /var/log/nginx/\$project.error.log warn;
+    access_log /var/log/nginx/$project.access.log combined;
+    error_log /var/log/nginx/$project.error.log warn;
 
-    server_name \$project.server www.\$project.server;
+    server_name $project.server www.$project.server;
     set \$host_path /srv/\$project;
     root \$host_path/public;
     set \$app_bootstrap \"index.php\";
@@ -124,12 +122,11 @@ email=test@$DOMAIN
 openssl req -nodes -x509 -newkey rsa:2048 -keyout ./setup/SSL/nginx.key -out ./setup/SSL/nginx.crt -days 365 -subj "/C=$country/ST=$state/L=$locality/O=$organization/OU=$organizationalunit/CN=$commonname/emailAddress=$email"
 
 if [ ! -d ./.git ]; then
-echo "
+echo "#!/bin/sh
 git init
 git add .
 git commit -m \"first commit\"
-echo \"<domein>:<user>/<reponame>.git\"
-read -r repo
+read -p \"<domein>:<user>/<reponame>.git\" repo
 if [ ! -z \$repo ]; then
 git remote add origin git@\$repo
 git push -u origin master
