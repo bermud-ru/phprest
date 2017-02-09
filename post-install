@@ -13,9 +13,9 @@ mkdir -p ./Application/models
 mkdir -p ./setup
 cp -rf ./$vendor/public/401.html ./public/
 cp -rf ./$vendor/public/500.html ./public/
-cp -rf ./$vendor/public/fivicon.ico ./public/
+cp -rf ./$vendor/public/favicon.ico ./public/
 cp -rf ./$vendor/public/index.php ./public/
-cp -rf ./$vendor/robots.txt ./public/
+cp -rf ./$vendor/public/robots.txt ./public/
 cp -rf ./$vendor/config.php ./
 cp -n ./$vendor/public/css/* ./public/css/
 #cp -rf ./$vendor/public/js/* ./public/js/
@@ -25,7 +25,7 @@ do
 done
 cp -rf ./$vendor/Application/view/* ./Application/view/
 cp -rf ./$vendor/Application/models/* ./Application/models/
-cp -rf ./$vendor/* ./setup/
+cp -rf ./$vendor/setup/* ./setup/
 
 mkdir -p ./setup/SSL
 ######## CONFIG ##########
