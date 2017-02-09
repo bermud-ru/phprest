@@ -33,20 +33,14 @@ project="json.host"
 SSL_path=$(pwd)/setup/SSL
 echo "
 server {
-    set \$project \"$project\"
+    set \$project \"$project\";
     # access_log /var/log/nginx/\$project.access.log combined;
     # error_log /var/log/nginx/\$project.error.log warn;
 
     server_name \$project.server www.\$project.server;
-    #set \$host_path \"/srv/\$project\";
-    #root \$host_path/public;
-    #set \$app_bootstrap \"index.php\";
-    #index \$app_bootstrap;
 
-    #charset utf-8;
     listen 80;
-    set \$PORT 443;
-    return 302 https://\$server_name\$request_uri:\$PORT;
+    return 302 https://\$server_name\$request_uri;
 }
 
 server {
