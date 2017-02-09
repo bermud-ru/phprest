@@ -4,24 +4,47 @@
 # @author Андрей Новиков <andrey@novikov.be>
 # @data 07/12/2015
 
+vendor=vendor/bermud-ru/phprest
 echo "Post-install scripting ..."
 mkdir -p ./public/css
 mkdir -p ./public/js
 mkdir -p ./Application/view
 mkdir -p ./Application/models
 mkdir -p ./setup
-cp -rf ./vendor/bermud-ru/phprest/public/401.html ./public/
-cp -rf ./vendor/bermud-ru/phprest/public/500.html ./public/
-cp -rf ./vendor/bermud-ru/phprest/public/fivicon.ico ./public/
-cp -rf ./vendor/bermud-ru/phprest/public/index.php ./public/
-cp -rf ./vendor/bermud-ru/phprest/public/robots.txt ./public/
-cp -rf ./vendor/bermud-ru/phprest/config.php ./
-cp -n ./vendor/bermud-ru/phprest/public/css/* ./public/css/
-#cp -rf ./vendor/bermud-ru/phprest/public/js/* ./public/js/
-for js in ./vendor/bermud-ru/phprest/public/js/*
+cp -rf ./$vendor/public/401.html ./public/
+cp -rf ./$vendor/public/500.html ./public/
+cp -rf ./$vendor/public/fivicon.ico ./public/
+cp -rf ./$vendor/public/index.php ./public/
+cp -rf ./$vendor/robots.txt ./public/
+cp -rf ./$vendor/config.php ./
+cp -n ./$vendor/public/css/* ./public/css/
+#cp -rf ./$vendor/public/js/* ./public/js/
+for js in ./$vendor/public/js/*
 do
  [ -f $js ] && cp -rf $js ./public/js/
 done
-cp -rf ./vendor/bermud-ru/phprest/Application/view/* ./Application/view/
-cp -rf ./vendor/bermud-ru/phprest/Application/models/* ./Application/models/
-cp -rf ./vendor/bermud-ru/phprest/setup/* ./setup/
+cp -rf ./$vendor/Application/view/* ./Application/view/
+cp -rf ./$vendor/Application/models/* ./Application/models/
+cp -rf ./$vendor/* ./setup/
+
+mkdir -p ./setup/SSL
+######## CONFIG ##########
+DOMAIN=phprest.ru
+SUBDOMAIN=mail.
+#Country Name (2 letter code) [XX]:
+country=BM
+#State or Province Name (full name) []:
+state=Bermudian
+#Locality Name (eg, city) [Default City]:
+locality=Bermudian
+#Organization Name (eg, company) [Default Company Ltd]:
+organization=None
+#Common Name (eg, your name or your server's hostname) []:
+organizationalunit=IT
+#Email Address []:
+email=test@$DOMAIN
+##########################
+
+openssl req -nodes -x509 -newkey rsa:2048 -keyout ./setup/SSL/nginx.key -out ./setup/SSL/nginx.crt -days 365 -subj "/C=$country/ST=$state/L=$locality/O=$organization/OU=$organizationalunit/CN=$commonname/emailAddress=$email"
+
+
