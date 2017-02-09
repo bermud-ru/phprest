@@ -17,6 +17,7 @@ cp -rf ./$vendor/public/favicon.ico ./public/
 cp -rf ./$vendor/public/index.php ./public/
 cp -rf ./$vendor/public/robots.txt ./public/
 cp -rf ./$vendor/config.php ./
+cp -rf ./$vendor/init.sh ./
 cp -n ./$vendor/public/css/* ./public/css/
 #cp -rf ./$vendor/public/js/* ./public/js/
 for js in ./$vendor/public/js/*
