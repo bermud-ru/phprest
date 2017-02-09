@@ -108,7 +108,7 @@ server {
         log_not_found off;
     }
 }
-" > ./setap/nginx/$project.conf
+" > ./setup/nginx/$project.conf
 
 mkdir -p ./setup/SSL
 ######## CONFIG ##########
