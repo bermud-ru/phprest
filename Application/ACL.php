@@ -31,13 +31,13 @@ class ACL
             if (isset($app->config['user']) && is_string($app->config['user'])) {
                 $params = [];
                 preg_match_all('/:([a-zA-Z0-9\._]+)/', $app->config['user'], $fields);
-                if ($fields[1]) {
+                if ( isset($fields[1]) ) {
                     if (!array_diff($params, array_keys($app->header))) $params = array_intersect_key($app->header, array_flip($fields[1]));
                     else $params = array_intersect_key($app->params, array_flip($fields[1]));
                 }
                 $db = isset($app->db) ? $app->db : new \Application\Db($app, true);
                 //echo '<textarea>'; var_dump($params); echo '</testarea>';exit;
-                $this->user = $db->stmt($app->config['user'], $params)->fetch();
+                $this->user = count($params) ? $db->stmt($app->config['user'], $params)->fetch() : null;
                 if ($attach) {
                     $app->db = $db; $app->acl = $this;
                 }
