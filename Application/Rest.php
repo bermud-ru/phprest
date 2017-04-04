@@ -16,6 +16,7 @@ class Rest
     protected $filter = [];
     protected $acl = [];
     protected $action = null;
+    protected $checkPermission = true;
 
     // Авторизованный пользватель, выполняющий Rest action
     public $user = null;
@@ -35,6 +36,8 @@ class Rest
         if (!isset($opt[$method]) && !isset($opt[$method]['action']) && !is_callable($opt[$method]['action'])) {
             $this->error['404'] = "//$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI] action[$method] not supported";
         } else {
+            $this->checkPermission = isset($opt[$method]['permission']) ? boolval($opt[$method]['permission']) :
+                                   ( isset($opt['permission']) ? boolval($opt['permission']) : true );
             $params= $opt[$method]['params'] ?? $opt['params'] ?? [];
             $filter= $opt[$method]['filter'] ?? $opt['filter'] ?? [];
             $this->init(array_merge($params, $filter));
@@ -71,7 +74,7 @@ class Rest
      * @return mixed
      */
     public function dispatcher(array $opt=[]) {
-        if (!$this->isAllow($opt['field'] ?? '')) return $this->response('error', [ '403' => 'Отказано в доступе / Permission denied']);
+        if ($this->checkPermission && !$this->isAllow($opt['field'] ?? '')) return $this->response('error', [ '403' => 'Отказано в доступе / Permission denied']);
         if (!count($this->error)) {
             try {
                 return $this->response($opt['type'] ?? 'json',call_user_func_array($this->action, $this->arguments($this->action)));
