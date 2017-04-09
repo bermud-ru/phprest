@@ -29,7 +29,7 @@ done
 cp -rf ./$vendor/Application/view/* ./Application/view/
 cp -rf ./$vendor/Application/models/* ./Application/models/
 
-project="json.host"
+project="phprest.server"
 SSL_path=$(pwd)/setup/SSL
 echo "
 server {
@@ -46,7 +46,7 @@ server {
     access_log /var/log/nginx/$project.access.log combined;
     error_log /var/log/nginx/$project.error.log warn;
 
-    server_name $project.server www.$project.server;
+    server_name $project www.$project;
     set \$host_path /srv/\$project;
     root \$host_path/public;
     set \$app_bootstrap \"index.php\";
@@ -106,6 +106,10 @@ server {
 " > ./setup/nginx/$project.conf
 
 mkdir -p ./setup/SSL
+mkdir -p /etc/pki/tls
+if [ ! -f /etc/pki/tls/openssl.cnf ]; then
+touch /etc/pki/tls/openssl.cnf
+fi
 ######## CONFIG ##########
 #Country Name (2 letter code) [XX]:
 country=BM
@@ -122,8 +126,8 @@ email=test@$DOMAIN
 ##########################
 
 sudo openssl req -nodes -x509 -newkey rsa:2048 -keyout ./nginx.key -out ./nginx.crt -days 365 \
- -subj "/C=$country/ST=$state/L=$locality/O=$organization/OU=$organizationalunit/CN=$commonname/emailAddress=$email" \
- -reqexts SAN -config <(cat /etc/pki/tls/openssl.cnf <(printf "[SAN]\nsubjectAltName=IP:185.25.10.173,DNS:dqindicators.memphis"))
+  -subj "/C=$country/ST=$state/L=$locality/O=$organization/OU=$organizationalunit/CN=$commonname/emailAddress=$email" \
+  -reqexts SAN -config <(cat /etc/pki/tls/openssl.cnf <(printf "[SAN]\nsubjectAltName=IP:127.0.0.1,DNS:phprest.server"))
 
 if [ ! -d ./.git ]; then
 echo "#!/bin/sh
