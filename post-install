@@ -110,28 +110,12 @@ mkdir -p /etc/pki/tls
 if [ ! -f /etc/pki/tls/openssl.cnf ]; then
 touch /etc/pki/tls/openssl.cnf
 fi
-######## CONFIG ##########
-#Country Name (2 letter code) [XX]:
-country=BM
-#State or Province Name (full name) []:
-state=Bermudian
-#Locality Name (eg, city) [Default City]:
-locality=Bermudian
-#Organization Name (eg, company) [Default Company Ltd]:
-organization=None
-#Organization unit (eg, dept.) [Default IT]:
-organizationalunit=IT
-#Common Name (eg, your name or your server's hostname) []:
-commonname=DMZ
-#Email Address []:
-email=test@$DOMAIN
-##########################
 
 #sudo openssl req -nodes -x509 -newkey rsa:2048 -keyout ./setup/SSL/nginx.key -out ./setup/SSL/nginx.crt -days 365 \
 #  -subj "/C=$country/ST=$state/L=$locality/O=$organization/OU=$organizationalunit/CN=$commonname/emailAddress=$email" \
 #  -reqexts SAN -config <(cat /etc/pki/tls/openssl.cnf <(printf "[SAN]\nsubjectAltName=IP:127.0.0.1,DNS:phprest.server"))
 
-cat << EOF > /tmp/test.cnf
+cat << EOF > ./setup/SSL/sertificat.cnf
 [ req ]
 default_bits       = 2048
 distinguished_name = req_distinguished_name
@@ -154,20 +138,30 @@ DNS.1   = bestflare.com
 DNS.2   = usefulread.com
 DNS.3   = chandank.com
 EOF
+cat << EOF > ./setup/SSL/make
+#!/usr/bin/env bash
+#
+######## CONFIG ########################################################################################################
+#Country Name (2 letter code) [XX]:
+country=BM
+#State or Province Name (full name) []:
+state=Bermudian
+#Locality Name (eg, city) [Default City]:
+locality=Bermudian
+#Organization Name (eg, company) [Default Company Ltd]:
+organization=None
+#Organization unit (eg, dept.) [Default IT]:
+organizationalunit=IT
+#Common Name (eg, your name or your server's hostname) []:
+commonname=DMZ
+#Email Address []:
+email=test@$DOMAIN
+########################################################################################################################
 sudo openssl req -nodes -x509 -newkey rsa:2048 -keyout ./setup/SSL/nginx.key -out ./setup/SSL/nginx.crt -days 365 \
   -subj "/C=$country/ST=$state/L=$locality/O=$organization/OU=$organizationalunit/CN=$commonname/emailAddress=$email" \
-  -config /tmp/test.cnf
-rm /tmp/test.cnf
-if [ ! -d ./.git ]; then
-echo "#!/bin/sh
-git init
-git add .
-git commit -m \"first commit\"
-read -p \"<domein>:<user>/<reponame>.git\" repo
-if [ ! -z \$repo ]; then
-git remote add origin git@\$repo
-git push -u origin master
-fi
-" > ./project.init.sh
-sh ./project.init.sh
-fi
+  -config ./setup/SSL/sertificat.cnf
+exit
+EOF
+chmod +x ./setup/SSL/make
+bash ./setup/SSL/make
+exit
