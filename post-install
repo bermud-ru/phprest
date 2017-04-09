@@ -141,6 +141,11 @@ EOF
 cat << EOF > ./setup/SSL/make
 #!/usr/bin/env bash
 #
+# Make sure only root can run our script
+if [ "$(id -u)" != "0" ]; then
+   echo "This script must be run as root" 1>&2
+   exit 1
+fi
 ######## CONFIG ########################################################################################################
 #Country Name (2 letter code) [XX]:
 country=BM
@@ -157,11 +162,11 @@ commonname=DMZ
 #Email Address []:
 email=test@$DOMAIN
 ########################################################################################################################
-sudo openssl req -nodes -x509 -newkey rsa:2048 -keyout ./nginx.key -out ./nginx.crt -days 365 \
-  -subj "/C=\$country/ST=\$state/L=\$locality/O=\$organization/OU=\$organizationalunit/CN=\\$commonname/emailAddress=\\\\$email" \
+openssl req -nodes -x509 -newkey rsa:2048 -keyout ./nginx.key -out ./nginx.crt -days 365 \
+  -subj "/C=\$country/ST=\$state/L=\$locality/O=\$organization/OU=\$organizationalunit/CN=\$commonname/emailAddress=\$email" \
   -config ./sertificat.cnf
 exit
 EOF
 chmod +x ./setup/SSL/make
-bash ./setup/SSL/make
+sudo ./setup/SSL/make
 exit
