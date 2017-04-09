@@ -134,9 +134,9 @@ commonName                  = test@$DOMAIN
 [ req_ext ]
 subjectAltName = @alt_names
 [alt_names]
-DNS.1   = bestflare.com
-DNS.2   = usefulread.com
-DNS.3   = chandank.com
+DNS.1   = phprest.com
+DNS.2   = phprest1.com
+DNS.3   = phprest2.com
 EOF
 cat << EOF > ./setup/SSL/make
 #!/usr/bin/env bash
@@ -157,9 +157,9 @@ commonname=DMZ
 #Email Address []:
 email=test@$DOMAIN
 ########################################################################################################################
-sudo openssl req -nodes -x509 -newkey rsa:2048 -keyout ./setup/SSL/nginx.key -out ./setup/SSL/nginx.crt -days 365 \
+sudo openssl req -nodes -x509 -newkey rsa:2048 -keyout ./nginx.key -out ./nginx.crt -days 365 \
   -subj "/C=$country/ST=$state/L=$locality/O=$organization/OU=$organizationalunit/CN=$commonname/emailAddress=$email" \
-  -config ./setup/SSL/sertificat.cnf
+  -config ./sertificat.cnf
 exit
 EOF
 chmod +x ./setup/SSL/make
