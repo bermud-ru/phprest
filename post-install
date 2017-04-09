@@ -158,7 +158,7 @@ commonname=DMZ
 email=test@$DOMAIN
 ########################################################################################################################
 sudo openssl req -nodes -x509 -newkey rsa:2048 -keyout ./nginx.key -out ./nginx.crt -days 365 \
-  -subj "/C=\$country/ST=\$state/L=\$locality/O=\$organization/OU=\$organizationalunit/CN=\$commonname/emailAddress=\$email" \
+  -subj "/C=\$country/ST=\$state/L=\$locality/O=\$organization/OU=\$organizationalunit/CN=\\$commonname/emailAddress=\\\\$email" \
   -config ./sertificat.cnf
 exit
 EOF
