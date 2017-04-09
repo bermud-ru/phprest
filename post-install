@@ -126,8 +126,10 @@ email=test@$DOMAIN
 ##########################
 
 sudo openssl req -nodes -x509 -newkey rsa:2048 -keyout ./nginx.key -out ./nginx.crt -days 365 \
-  -subj "/C=$country/ST=$state/L=$locality/O=$organization/OU=$organizationalunit/CN=$commonname/emailAddress=$email" \
-  -reqexts SAN -config < (cat /etc/pki/tls/openssl.cnf < (printf "[SAN]\nsubjectAltName=IP:127.0.0.1,DNS:phprest.server"))
+    -subj "/C=$country/ST=$state/L=$locality/O=$organization/OU=$organizationalunit/CN=$commonname/emailAddress=$email" \
+    -reqexts SAN -config <( \
+    cat /etc/pki/tls/openssl.cnf <(\
+    printf "[SAN]\nsubjectAltName=IP:127.0.0.1,DNS:phprest.server"))
 
 if [ ! -d ./.git ]; then
 echo "#!/bin/sh
