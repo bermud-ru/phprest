@@ -50,9 +50,13 @@ EOT;
      */
     public function partial($script, $permit = true):string {
         $permit = boolval($permit);
-        $tmpl = is_array($script) ? $script : [$script];
-        $idx = (count($script) == 2) && !$permit ? 1 : ($permit ? 0 : null);
-        if (!is_null($idx)) return $this->context($tmpl[$idx], ['self' => &$this]);
+
+        if (is_array($script)) {
+            $idx = (count($script) == 2) && !$permit ? 1 : ($permit ? 0 : null);
+            if (!is_null($idx)) return $this->context($script[$idx], ['self' => &$this]);
+        } elseif (is_string($script)) {
+            return $this->context($script, ['self' => &$this, 'script' => $script, 'is_allow' => $permit]);
+        }
 
         if (count($script) == 2) trigger_error("Application\View::partial($script) пустой идентификатор скрипта", E_USER_WARNING);
         return '';
