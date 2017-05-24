@@ -52,7 +52,8 @@ class Rest
     /**
      * Params init
      */
-    protected function init($params){
+    protected function init($params)
+    {
         foreach ($params as $k => $v) {
             if (is_array($v)) {
                 (new \Application\Parameter($this->owner, $v))->onError($this->error);
@@ -73,7 +74,8 @@ class Rest
      * @param array $opt
      * @return mixed
      */
-    public function dispatcher(array $opt=[]) {
+    public function dispatcher(array $opt=[])
+    {
         if ($this->checkPermission && !$this->isAllow($opt['field'] ?? '')) return $this->response('error', [ '403' => 'Отказано в доступе / Permission denied']);
         if (!count($this->error)) {
             try {
@@ -92,7 +94,8 @@ class Rest
      * @param string $field
      * @return bool
      */
-    protected function isAllow(string $field){
+    protected function isAllow(string $field): bool
+    {
         if (!count($this->acl)) return true;
         if (!$this->user || empty($field)) return false;
         return $this->user->in($field, $this->acl);
@@ -128,7 +131,8 @@ class Rest
      * Получаем массив Поле-Значение REST action
      * @return array
      */
-    public function getParams(array $params) {
+    public function getParams(array $params): array
+    {
         if (count($params))
             $source = &$this->owner->params;
             return array_intersect_key($source, array_flip(array_map(function ($v) use(&$source) {
@@ -146,7 +150,8 @@ class Rest
      *
      * @param $data
      */
-    public function response(string $type, $data){
+    public function response(string $type, $data)
+    {
         switch ($type){
             case 'json':
                 if (isset($data['error'])) {

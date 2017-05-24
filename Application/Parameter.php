@@ -94,7 +94,8 @@ class Parameter implements \JsonSerializable
      * Set error message
      * @param $e
      */
-    public function setMessage($e){
+    public function setMessage($e)
+    {
         $this->alert = $e;
     }
 
@@ -103,7 +104,8 @@ class Parameter implements \JsonSerializable
      *
      * @param array $error
      */
-    public function onError(array &$error){
+    public function onError(array &$error)
+    {
        if ($this->alert) $error[$this->name] = $this->alert;
     }
 
@@ -121,7 +123,8 @@ class Parameter implements \JsonSerializable
      * \JsonSerializable interface release
      * @return mixed|null
      */
-    public function jsonSerialize() {
+    public function jsonSerialize() 
+    {
         if (is_callable($this->formatter)) return call_user_func_array($this->formatter, $this->arguments($this->formatter));
         return $this->raw;
     }
@@ -130,7 +133,8 @@ class Parameter implements \JsonSerializable
      *
      * @return array
      */
-    public function __sleep() {
+    public function __sleep(): array 
+    {
         return [$this->alias ?? $this->name => $this->restore ? $this->raw : $this->value];
     }
 

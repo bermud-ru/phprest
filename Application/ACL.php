@@ -82,9 +82,9 @@ class ACL
      *
      * @param string $field
      * @param array $roles
-     * @return mixed
+     * @return bool
      */
-    public function in(string $field, array $names)
+    public function in(string $field, array $names): bool
     {
         if ($this->user === false) return null;
         if (!count($this->user) && !in_array($field, $this->user)) return false;

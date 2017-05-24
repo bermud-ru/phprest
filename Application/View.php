@@ -18,7 +18,8 @@ class View extends \Application\PHPRoll
      * @param array $params
      * @return string
      */
-    public function script(array $params =[]):string {
+    public function script(array $params =[]): string 
+    {
         if (!isset($params['id']) && !isset($params['name'])) throw new \Exception('Application\View::script() - необходимо определить id или name!');
         $id = $params['id'] ?? $params['name'];
         if (empty($id)) trigger_error("Application\View::script(...) пустой идентификатор скрипта", E_USER_WARNING);
@@ -30,7 +31,7 @@ class View extends \Application\PHPRoll
         $vars = '';
         $a = array_intersect_key( $params, array_flip( preg_grep( '/^tmpl\-.*/i', array_keys( $params ))));
         if (count($a)) array_walk($a, function(&$item, $key) use(&$vars) { $vars = $key.'="'.$item.'" '; });
-$content =<<<EOT
+        $content =<<<EOT
 <script id="$id" type="text/x-template" $charset $arguments $vars $before $after>
 EOT;
         if ($params['src']) $content .= $this->context($params['src'], array_merge($opt,['script'=>null,'ext'=>'']));
@@ -48,7 +49,8 @@ EOT;
      * @param boolean $permit
      * @return string
      */
-    public function partial($script, $permit = true):string {
+    public function partial($script, $permit = true): string 
+    {
         $permit = boolval($permit);
 
         if (is_array($script)) {
