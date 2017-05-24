@@ -42,7 +42,8 @@ class Parameter implements \JsonSerializable
 
         foreach ($opt as $k => $v) if (property_exists($this, $k)) $this->{$k} = $v;
 
-        $this->raw = $this->value = $this->parent->params[$this->name] ?? $this->default;
+        $this->raw = isset($this->parent->params[$this->name]) ? $this->parent->params[$this->name] : null;
+        $this->value = empty($this->raw) ? $this->default : $this->raw ;
         if (is_callable($this->before)) $this->value = call_user_func_array($this->before, $this->arguments($this->before));
 
         if ($this->requered && empty($this->parent->params[$this->name])) {
