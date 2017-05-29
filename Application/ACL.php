@@ -13,7 +13,7 @@ namespace Application;
 
 class ACL
 {
-    protected $user = [];
+    public $user = [];
     protected $acl = [];
 
     /**

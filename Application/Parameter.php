@@ -84,9 +84,11 @@ class Parameter implements \JsonSerializable
                 case 'self': $item->value = $this; break;
                 case 'owner': $item->value = $this->parent; break;
                 case 'raw': $item->value = $this->raw; break;
-                default: if (in_array(strtolower($item->name), [end(explode(\Application\PHPRoll::KEY_SEPARATOR, strtolower($this->name))), strtolower($this->alias)])) {
+                default:
+                    $name = explode(\Application\PHPRoll::KEY_SEPARATOR, strtolower($this->name));
+                    if (strtolower($item->name) == end($name) || (!empty($this->alias) && strtolower($item->name) == strtolower($this->alias)) ) {
                     $item->value = $this->value;
-                }
+                } else { $item = null; }
             } return $item->value;
         }, (new \ReflectionFunction($fn))->getParameters());
     }
