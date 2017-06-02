@@ -87,7 +87,7 @@ class ACL
     public function in(string $field, array $names)
     {
         if ($this->user === false) return null;
-        if (!count($this->user) && !in_array($field, $this->user)) return false;
+        if (!count($this->user) && !in_array($field, $this->user ?? [])) return false;
         if (\Application\PHPRoll::is_assoc($names)) {
             return in_array($this->user[$field], array_values($names));
         }

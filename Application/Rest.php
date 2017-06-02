@@ -133,15 +133,17 @@ class Rest
      */
     public function getParams(array $params): array
     {
-        if (count($params))
+        if (count($params) && !empty($this->owner->params)) {
             $source = &$this->owner->params;
-            return array_intersect_key($source, array_flip(array_map(function ($v) use(&$source) {
+            return array_intersect_key($source, array_flip(array_map(function ($v) use (&$source) {
                 if (isset($v['alias']) && isset($source[$v['name']])) {
                     $source[$v['alias']] = $source[$v['name']];
                     unset($source[$v['name']]);
                     return $v['alias'];
                 }
-                return $v['name'];}, $params)));
+                return $v['name'];
+            }, $params)));
+        }
         return $this->owner->params;
     }
 
@@ -164,6 +166,47 @@ class Rest
             default:
                 return $data;
         }
+    }
+
+    /**
+     * REST Native property
+     *
+     * @param $name
+     * @return mixed
+     * @throws \Exception
+     */
+    public function __get ( $name )
+    {
+        if ($this->owner instanceof \Application\PHPRoll && property_exists($this->owner, $name)) {
+            return $this->owner->{$name};
+        }
+        throw new \Exception(__CLASS__."->$name property not foudnd!");
+    }
+
+    /**
+     * REST Native method
+     *
+     * @param $name
+     * @param $arguments
+     * @return mixed
+     */
+    public function __call($name, $arguments)
+    {
+        if ($this->owner instanceof \Application\PHPRoll && method_exists($this->owner, $name)) return call_user_func_array(array($this->owner, $name), $arguments);
+        throw new \Exception(__CLASS__."->$name(...) method not foudnd");
+    }
+
+    /**
+     * REST Native static method
+     *
+     * @param $name
+     * @param $arguments
+     * @return mixed
+     */
+    public static function __callStatic($name, $arguments)
+    {
+        if (method_exists(\Application\PHPRoll, $name)) return call_user_func_array(array(\Application\PHPRoll, $name), $arguments);
+        throw new \Exception(__CLASS__."::$name(...) method not foudnd");
     }
 
 }
