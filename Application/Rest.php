@@ -146,27 +146,27 @@ class Rest
         }
         return $this->owner->params;
     }
-
-    /**
-     * REST response
-     *
-     * @param $data
-     */
-    public function response(string $type, $data)
-    {
-        switch ($type){
-            case 'json':
-                if (isset($data['error'])) {
-                    //unset($data['result']);
-                    return $this->owner->response('error', $data);
-                }
-                return $this->owner->response($type, $data);
-            case 'error': return $this->owner->response($type, ['error'=>$data]);
-            case 'array':
-            default:
-                return $data;
-        }
-    }
+//
+//    /**
+//     * REST response
+//     *
+//     * @param $data
+//     */
+//    public function response(string $type, $data)
+//    {
+//        switch ($type){
+//            case 'json':
+//                if (isset($data['error'])) {
+//                    //unset($data['result']);
+//                    return $this->owner->response('error', $data);
+//                }
+//                return $this->owner->response($type, $data);
+//            case 'error': return $this->owner->response($type, ['error'=>$data]);
+//            case 'array':
+//            default:
+//                return $data;
+//        }
+//    }
 
     /**
      * REST Native property
