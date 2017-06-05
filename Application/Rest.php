@@ -76,15 +76,19 @@ class Rest
      */
     public function dispatcher(array $opt=[])
     {
-        if ($this->checkPermission && !$this->isAllow($opt['field'] ?? '')) return $this->response('error', [ '403' => 'Отказано в доступе / Permission denied']);
+
+        if ($this->checkPermission && !$this->isAllow($opt['field'] ?? '')) return $this->response('error', ['code' => '403', 'message' => 'Отказано в доступе / Permission denied']);
         if (!count($this->error)) {
             try {
-                return $this->response($opt['type'] ?? 'json',call_user_func_array($this->action, $this->arguments($this->action)));
+                $result = call_user_func_array($this->action, $this->arguments($this->action)) ?? [];
+                if (isset($result['error'])) $result['code'] = 417;
+                return $this->response(isset($result['error']) ? 'error' : $opt['type'] ?? 'json', $result);
             } catch (\Exception $e) {
-                return $this->response('error', ['500' => $e->getMessage()]);
+                return $this->response('error', ['code' => '400', 'message'=> $e->getMessage()]);
             }
         }
-        return $this->response('error', $this->error);
+
+        return $this->response('error', ['message'=>$this->error]);
     }
 
     /**
