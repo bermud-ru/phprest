@@ -82,7 +82,7 @@ class Rest
             try {
                 $result = call_user_func_array($this->action, $this->arguments($this->action)) ?? [];
                 if (isset($result['error'])) $result['code'] = 417;
-                return $this->response(isset($result['error']) ? 'error' : $opt['type'] ?? 'json', $result);
+                return $this->response(isset($result['error']) ? 'error' : ($opt['type'] ?? 'json'), $result);
             } catch (\Exception $e) {
                 return $this->response('error', ['code' => '400', 'message'=> $e->getMessage()]);
             }
@@ -150,30 +150,9 @@ class Rest
         }
         return $this->owner->params;
     }
-//
-//    /**
-//     * REST response
-//     *
-//     * @param $data
-//     */
-//    public function response(string $type, $data)
-//    {
-//        switch ($type){
-//            case 'json':
-//                if (isset($data['error'])) {
-//                    //unset($data['result']);
-//                    return $this->owner->response('error', $data);
-//                }
-//                return $this->owner->response($type, $data);
-//            case 'error': return $this->owner->response($type, ['error'=>$data]);
-//            case 'array':
-//            default:
-//                return $data;
-//        }
-//    }
 
     /**
-     * REST Native property
+     * PHPRoll Native property
      *
      * @param $name
      * @return mixed
@@ -188,7 +167,7 @@ class Rest
     }
 
     /**
-     * REST Native method
+     * PHPRoll Native method
      *
      * @param $name
      * @param $arguments
@@ -201,7 +180,7 @@ class Rest
     }
 
     /**
-     * REST Native static method
+     * PHPRoll Native static method
      *
      * @param $name
      * @param $arguments
