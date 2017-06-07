@@ -31,7 +31,8 @@ cp -rf ./$vendor/Application/models/* ./Application/models/
 
 project="phprest.server"
 SSL_path=$(pwd)/setup/SSL
-echo "
+
+cat << EOF > ./setup/nginx/$project.conf
 server {
     # access_log /var/log/nginx/$project.access.log combined;
     # error_log /var/log/nginx/$project.error.log warn;
@@ -103,7 +104,7 @@ server {
         log_not_found off;
     }
 }
-" > ./setup/nginx/$project.conf
+EOF
 
 mkdir -p ./setup/SSL
 mkdir -p /etc/pki/tls
