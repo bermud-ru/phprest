@@ -12,7 +12,7 @@ namespace Application;
 
 class Parameter implements \JsonSerializable
 {
-    protected $parent = null;
+    protected $owner = null;
     protected $index = null;
     protected $name = null;
     protected $alias = null;
@@ -37,21 +37,21 @@ class Parameter implements \JsonSerializable
      * @param $parent \Application\Rest
      * @param array $opt
      */
-    public function __construct( \Application\PHPRoll &$parent, array $opt ){
-        $this->parent = $parent;
+    public function __construct( \Application\PHPRoll &$owner, array $opt ){
+        $this->owner = $owner;
 
         foreach ($opt as $k => $v) if (property_exists($this, $k)) $this->{$k} = $v;
 
-        $this->raw = isset($this->parent->params[$this->name]) ? $this->parent->params[$this->name] : null;
+        $this->raw = isset($this->owner->params[$this->name]) ? $this->owner->params[$this->name] : null;
         $this->value = empty($this->raw) ? $this->default : $this->raw ;
         if (is_callable($this->before)) $this->value = call_user_func_array($this->before, $this->arguments($this->before));
 
-        if ($this->requered && empty($this->parent->params[$this->name])) {
+        if ($this->requered && empty($this->owner->params[$this->name])) {
             $this->isEmpty = true;
             $this->setMessage($this->formatter(isset($opt['message']) ? $opt['message'] : "Parameter error %(name)s !", ['name' => $this->name]));
         }
 
-        if (!empty($this->validator) && ($this->requered || $this->key || !empty($this->parent->params[$this->name]))) {
+        if (!empty($this->validator) && ($this->requered || $this->key || !empty($this->owner->params[$this->name]))) {
             if (is_callable($this->validator)) {
                 $this->notValid = !call_user_func_array($this->validator, $this->arguments($this->validator));
             } elseif (is_string($this->validator) && !preg_match($this->validator, $this->value)) {
@@ -61,8 +61,8 @@ class Parameter implements \JsonSerializable
         }
 
         if (is_callable($this->after)) $this->value = call_user_func_array($this->after, $this->arguments($this->after));
-        if (!isset($this->parent->params[$this->alias])) $this->parent->params[$this->alias] = $this;
-        else $this->parent->params[$this->name] = $this;
+        if (!isset($this->owner->params[$this->alias])) $this->owner->params[$this->alias] = $this;
+        else $this->owner->params[$this->name] = $this;
     }
 
     /**
@@ -75,15 +75,16 @@ class Parameter implements \JsonSerializable
     {
         return array_map(function (&$item) {
             switch (strtolower($item->name)) {
-                case 'header': $item->value = $this->parent->header; break;
-                case 'params': $item->value = $this->parent->params; break;
+                case 'header': $item->value = $this->owner->header; break;
+                case 'params': $item->value = $this->owner->params; break;
                 case 'db':
-                    $this->parent->config['db'] = !empty($item->value) ? $item->value : $this->parent->config['db'];
-                    $item->value = isset($this->parent->db) ? $this->parent->db : new \Application\Db($this->parent, true);
+                    $this->owner->config['db'] = !empty($item->value) ? $item->value : $this->owner->config['db'];
+                    $item->value = isset($this->owner->db) ? $this->owner->db : new \Application\Db($this->owner, true);
                     break;
                 case 'self': $item->value = $this; break;
-                case 'owner': $item->value = $this->parent; break;
+                case 'owner': $item->value = $this->owner; break;
                 case 'raw': $item->value = $this->raw; break;
+                case 'user': $item->value = $this->owner->acl ?? []; break;
                 default:
                     $name = explode(\Application\PHPRoll::KEY_SEPARATOR, strtolower($this->name));
                     if (strtolower($item->name) == end($name) || (!empty($this->alias) && strtolower($item->name) == strtolower($this->alias)) ) {
@@ -164,5 +165,47 @@ class Parameter implements \JsonSerializable
             return $pattern;
         }
     }
+
+    /**
+     * PHPRoll Native property
+     *
+     * @param $name
+     * @return mixed
+     * @throws \Exception
+     */
+    public function __get ( $name )
+    {
+        if ($this->owner instanceof \Application\PHPRoll && property_exists($this->owner, $name)) {
+            return $this->owner->{$name};
+        }
+        throw new \Exception(__CLASS__."->$name property not foudnd!");
+    }
+
+    /**
+     * PHPRoll Native method
+     *
+     * @param $name
+     * @param $arguments
+     * @return mixed
+     */
+    public function __call($name, $arguments)
+    {
+        if ($this->owner instanceof \Application\PHPRoll && method_exists($this->owner, $name)) return call_user_func_array(array($this->owner, $name), $arguments);
+        throw new \Exception(__CLASS__."->$name(...) method not foudnd");
+    }
+
+    /**
+     * PHPRoll Native static method
+     *
+     * @param $name
+     * @param $arguments
+     * @return mixed
+     */
+    public static function __callStatic($name, $arguments)
+    {
+        if (method_exists(\Application\PHPRoll, $name)) return call_user_func_array(array(\Application\PHPRoll, $name), $arguments);
+        throw new \Exception(__CLASS__."::$name(...) method not foudnd");
+    }
+
 }
 ?>

@@ -32,6 +32,7 @@ class Rest
     public function __construct(\Application\PHPRoll &$owner, array $opt)
     {
         $this->owner = $owner;
+        if (isset($owner->acl) && $owner->acl) $this->user = $owner->acl; else $this->user = new \Application\ACL($owner, true);
         $method = strtolower($_SERVER['REQUEST_METHOD']);
         if (!isset($opt[$method]) && !isset($opt[$method]['action']) && !is_callable($opt[$method]['action'])) {
             $this->error['404'] = "//$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI] action[$method] not supported";
@@ -42,9 +43,8 @@ class Rest
             $filter= $opt[$method]['filter'] ?? $opt['filter'] ?? [];
             $this->init(array_merge($params, $filter));
             $this->params = $this->getParams($params);
-            if (count($filter)) $this->filter = array_filter($this->getParams($filter), function($v){return $v !='';});
+            if (count($filter)) $this->filter = array_filter($this->getParams($filter), function($v){ return !empty(strval($v)); });
             $this->acl = $opt[$method]['acl'] ?? $opt['acl'] ?? [];
-            if (count($this->acl)) $this->owner->user = $this->user = new \Application\ACL($owner);
             $this->action = $opt[$method]['action'];
         }
     }
