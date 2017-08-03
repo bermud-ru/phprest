@@ -54,6 +54,7 @@ class Rest
      */
     protected function init($params)
     {
+        //var_dump($this->owner->params);exit;
         foreach ($params as $k => $v) {
             if (is_array($v)) {
                 (new \Application\Parameter($this->owner, $v))->onError($this->error);

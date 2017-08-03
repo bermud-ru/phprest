@@ -119,6 +119,7 @@ class Parameter implements \JsonSerializable
      */
     public function __toString(): string
     {
+        // is_array() -> $a = array_map('strval', $a);
         if (is_callable($this->formatter)) return call_user_func_array($this->formatter, $this->arguments($this->formatter));
         return strval($this->value);
     }
