@@ -63,6 +63,7 @@ class Rest
      */
     protected function init(array $params, &$source)
     {
+        //var_dump($this->owner->params);exit;
         foreach ($params as $k => $v) {
             if ( is_array($v) && (isset($source[$v['name']]) || (isset($v['alias']) && isset($source[$v['alias']]))) ) {
                 (new \Application\Parameter($source, $v))->onError($this->error);
