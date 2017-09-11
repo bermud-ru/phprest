@@ -5,6 +5,9 @@
  * @category RIA (Rich Internet Application) / SPA (Single-page Application)  PHPRole extend (Backend RESTfull)
  * @author Андрей Новиков <andrey (at) novikov (dot) be>
  * @data 07/07/2016
+ * @status beta
+ * @version 0.1.2
+ * @revision $Id: Rest.php 0004 2017-07-24 23:44:01Z $
  *
  */
 namespace Application;
@@ -12,9 +15,9 @@ namespace Application;
 class Rest
 {
     protected $owner = null;
-    protected $params = [];
-    protected $filter = [];
     protected $acl = [];
+    protected $opt = ['params'=>[],'filter'=>[]];
+    protected $method = 'GET';
     protected $action = null;
     protected $checkPermission = true;
 
@@ -22,6 +25,9 @@ class Rest
     public $user = null;
     // Контейнер сообщений об ошибках
     public $error = [];
+
+    public $params = [];
+    public $filter = [];
 
     /**
      * Rest constructor.
@@ -33,38 +39,66 @@ class Rest
     {
         $this->owner = $owner;
         if (isset($owner->acl) && $owner->acl) $this->user = $owner->acl; else $this->user = new \Application\ACL($owner, true);
-        $method = strtolower($_SERVER['REQUEST_METHOD']);
-        if (!isset($opt[$method]) && !isset($opt[$method]['action']) && !is_callable($opt[$method]['action'])) {
-            $this->error['404'] = "//$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI] action[$method] not supported";
+        $this->method = strtolower($_SERVER['REQUEST_METHOD']);
+        if (!isset($opt[$this->method]) && !isset($opt[$this->method]['action']) && !is_callable($opt[$this->method]['action'])) {
+            $this->error = ['code' => '404','message'=>"//$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI] action[$this->method] not supported"];
         } else {
-            $this->checkPermission = isset($opt[$method]['permission']) ? boolval($opt[$method]['permission']) :
+            $this->checkPermission = isset($opt[$this->method]['permission']) ? boolval($opt[$this->method]['permission']) :
                                    ( isset($opt['permission']) ? boolval($opt['permission']) : true );
-            $params= $opt[$method]['params'] ?? $opt['params'] ?? [];
-            $filter= $opt[$method]['filter'] ?? $opt['filter'] ?? [];
-            $this->init(array_merge($params, $filter));
-            $this->params = $this->getParams($params);
-            if (count($filter)) $this->filter = array_filter($this->getParams($filter), function($v){ return !empty(strval($v)); });
-            $this->acl = $opt[$method]['acl'] ?? $opt['acl'] ?? [];
-            $this->action = $opt[$method]['action'];
+
+            $this->opt['params'] = in_array(strtoupper($this->method),['POST','PUT']) ? array_merge($opt['common'] ?? [], $opt[$this->method]['params'] ?? $opt['params'] ?? []) : $opt[$this->method]['params'] ?? $opt['params'] ?? [];
+            $this->opt['filter'] = $opt[$this->method]['filter'] ?? [];
+
+            $this->acl = array_merge($opt['acl'] ?? [], $opt[$this->method]['acl'] ?? []);
+            $this->action = $opt[$this->method]['action'];
         }
     }
 
     /**
      * Params init
+     *
+     * @param array $params
+     * @param $source
+     * @return mixed
      */
-    protected function init($params)
+    protected function init(array $params, &$source)
     {
         foreach ($params as $k => $v) {
-            if (is_array($v)) {
-                (new \Application\Parameter($this->owner, $v))->onError($this->error);
-            } else {
-                if (isset($this->owner->params[$k])) {
-                    $this->owner->params[$k] = $v;
-                } else {
-                    $this->error[$k] = 'params not exist';
-                }
+            if ( is_array($v) && (isset($source[$v['name']]) || (isset($v['alias']) && isset($source[$v['alias']]))) ) {
+                (new \Application\Parameter($source, $v))->onError($this->error);
             }
         }
+
+        return $source;
+    }
+
+    /**
+     * Получаем массив Поле-Значение REST action
+     *
+     * @param array $params
+     * @param bool $empty
+     * @return array
+     */
+    protected function getParams(array $params, $empty = true): array
+    {
+        $result = [];
+        if (count($params)) {
+            foreach ($params as $k => $v) {
+                $value = isset($this->owner->params[$v['name']]) ? $this->owner->params[$v['name']] : null;
+                if ((is_null($value) || empty(($value))) && isset($v['default'])) {
+                     $value = $v['default'];
+                }
+                if (!is_null($value) || $empty) {
+                    if (isset($v['alias'])) $result[$v['alias']] = $value;
+                    else $result[$v['name']] = $value;
+                }
+//                elseif (isset($v['requered']) && !$v['requered'] || !isset($v['requered'])) {
+//                    $result[$v['name']] = null;
+//                }
+
+            }
+        }
+        return $result;
     }
 
     /**
@@ -77,7 +111,8 @@ class Rest
     public function dispatcher(array $opt=[])
     {
 
-        if ($this->checkPermission && !$this->isAllow($opt['field'] ?? '')) return $this->response('error', ['code' => '403', 'message' => 'Отказано в доступе / Permission denied']);
+        if ($this->checkPermission && !$this->isAllow($opt['field'] ?? ''))
+            return $this->response('error', ['code' => '403', 'message' => 'Отказано в доступе / Permission denied']);
         if (!count($this->error)) {
             try {
                 $result = call_user_func_array($this->action, $this->arguments($this->action)) ?? [];
@@ -88,7 +123,7 @@ class Rest
             }
         }
 
-        return $this->response('error', ['message'=>$this->error]);
+        return $this->response('error', $this->error);
     }
 
     /**
@@ -115,40 +150,38 @@ class Rest
     {
         return array_map(function (&$item) {
             switch (strtolower($item->name)){
-                case 'app': $item->value = $this->owner; break;
-                case 'header': $item->value = $this->owner->header; break;
-                case 'params': $item->value = $this->params; break;
-                case 'filter': $item->value = $this->filter; break;
+                case 'header':
+                    $item->value = $this->owner->header;
+                    break;
+                case 'params':
+                    if (count($this->opt['params']) && empty($this->params)) {
+                        $this->params = $this->getParams($this->opt['params'], true);
+                        $this->init($this->opt['params'], $this->params);
+                    }
+                    $item->value = &$this->params;
+                    break;
+                case 'filter':
+                    if (count($this->opt['filter']) && empty($this->filter)) {
+                        $this->filter = $this->getParams($this->opt['filter'], false);
+                        $this->init($this->opt['filter'], $this->filter);
+                    }
+                    $item->value = &$this->filter;
+                    break;
                 case 'db':
-                    $this->owner->config['db'] = !empty($item->value) ? $item->value : $this->owner->config['db'];
                     $item->value = isset($this->owner->db) ? $this->owner->db : new \Application\Db($this->owner, true);
                     break;
-                case 'self': $item->value = $this; break;
-                case 'owner': $item->value = $this->owner; break;
-                case 'user': $item->value = $this->user ?? []; break;
+                case 'self':
+                    $item->value = $this;
+                    break;
+                case 'owner':
+                    $item->value = $this->owner;
+                    break;
+                case 'user':
+                    $item->value = $this->user ?? [];
+                    break;
             }
             return $item->value;
         }, (new \ReflectionFunction($fn))->getParameters());
-    }
-
-    /**
-     * Получаем массив Поле-Значение REST action
-     * @return array
-     */
-    public function getParams(array $params): array
-    {
-        if (count($params) && !empty($this->owner->params)) {
-            $source = &$this->owner->params;
-            return array_intersect_key($source, array_flip(array_map(function ($v) use (&$source) {
-                if (isset($v['alias']) && isset($source[$v['name']])) {
-                    $source[$v['alias']] = $source[$v['name']];
-                    unset($source[$v['name']]);
-                    return $v['alias'];
-                }
-                return $v['name'];
-            }, $params)));
-        }
-        return $this->owner->params;
     }
 
     /**
@@ -160,7 +193,7 @@ class Rest
      */
     public function __get ( $name )
     {
-        if ($this->owner instanceof \Application\PHPRoll && property_exists($this->owner, $name)) {
+        if (property_exists($this->owner, $name)) {
             return $this->owner->{$name};
         }
         throw new \Exception(__CLASS__."->$name property not foudnd!");
@@ -175,7 +208,7 @@ class Rest
      */
     public function __call($name, $arguments)
     {
-        if ($this->owner instanceof \Application\PHPRoll && method_exists($this->owner, $name)) return call_user_func_array(array($this->owner, $name), $arguments);
+        if (method_exists($this->owner, $name)) return call_user_func_array(array($this->owner, $name), $arguments);
         throw new \Exception(__CLASS__."->$name(...) method not foudnd");
     }
 
@@ -191,6 +224,5 @@ class Rest
         if (method_exists(\Application\PHPRoll, $name)) return call_user_func_array(array(\Application\PHPRoll, $name), $arguments);
         throw new \Exception(__CLASS__."::$name(...) method not foudnd");
     }
-
 }
 ?>

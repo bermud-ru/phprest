@@ -1,12 +1,14 @@
 <?php
 /**
-* View.php
-*
-* @category RIA (Rich Internet Application) / SPA (Single-page Application) PHPRole extend (Frontend RESTfull)
-* @author Андрей Новиков <andrey (at) novikov (dot) be>
-* @data 01/08/2016
-*
-*/
+ * View.php
+ *
+ * @category RIA (Rich Internet Application) / SPA (Single-page Application) PHPRole extend (Frontend RESTfull)
+ * @author Андрей Новиков <andrey (at) novikov (dot) be>
+ * @data 01/08/2016
+ * @status beta
+ * @version 0.1.2
+ * @revision $Id: View.php 0004 2017-07-24 23:44:01Z $
+ */
 
 namespace Application;
 
@@ -62,6 +64,26 @@ EOT;
 
         if (count($script) == 2) trigger_error("Application\View::partial($script) пустой идентификатор скрипта", E_USER_WARNING);
         return '';
+    }
+
+    /**
+     * for RESTfull request
+     *
+     * @param array $opt
+     * @return array|string
+     */
+    public function getPattern(array $opt)
+    {
+        if (isset($this->header['Xhr-Version'])) {
+            $opt['script'] = null;
+        }
+
+        return parent::tpl($this->path, $opt);
+    }
+
+    public function is($type){
+        if (is_array($type)) return in_array(strtoupper($_SERVER['REQUEST_METHOD']), $type);
+        return strtoupper($type) == strtoupper($_SERVER['REQUEST_METHOD']);
     }
 
 }

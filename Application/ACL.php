@@ -5,6 +5,9 @@
  * @category RIA (Rich Internet Application) / SPA (Single-page Application) Users control access PHPRole extend (Backend RESTfull)
  * @author Андрей Новиков <andrey (at) novikov (dot) be>
  * @data 2/08/2016
+ * @status beta
+ * @version 0.1.2
+ * @revision $Id: ACL.php 0004 2017-07-24 23:44:01Z $
  *
  */
 
