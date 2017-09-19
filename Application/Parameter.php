@@ -35,6 +35,7 @@ class Parameter implements \JsonSerializable
     public $opt = [];
     public $value = null;
 
+    const MESSAGE = "\Application\Parameter::message %(name)s %(value)s!";
     /**
      * Parameter constructor
      *
@@ -53,7 +54,7 @@ class Parameter implements \JsonSerializable
 
         if ($this->requered && is_null($this->value)) {
             $this->isEmpty = true;
-            $this->setMessage($opt['message'], ['name' => $this->name]);
+            $this->setMessage($opt['message'] ?? \Application\Parameter::MESSAGE, ['name' => $this->name, 'value'=>'NULL']);
         }
 
         if (!empty($this->validator) && ($this->requered || $this->key || !empty($this->params[$this->name]))) {
@@ -62,7 +63,7 @@ class Parameter implements \JsonSerializable
             } elseif (is_string($this->validator) && !preg_match($this->validator, $this->value)) {
                 $this->notValid = true;
             }
-            if ($this->notValid ) $this->setMessage($opt['message'],['name' => $this->name, 'value'=>$this->value]);
+            if ($this->notValid ) $this->setMessage($opt['message'] ?? \Application\Parameter::MESSAGE, ['name' => $this->name, 'value'=>$this->value]);
         }
 
         if (is_callable($this->after)) $this->value = call_user_func_array($this->after, $this->arguments($this->after));
