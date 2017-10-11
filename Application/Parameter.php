@@ -125,6 +125,7 @@ class Parameter implements \JsonSerializable
     }
 
     /**
+     * __toString
      *
      * @return string
      */
@@ -137,6 +138,7 @@ class Parameter implements \JsonSerializable
     }
 
     /**
+     * __toInt
      *
      * @return int
      */
@@ -146,6 +148,21 @@ class Parameter implements \JsonSerializable
 
         trigger_error("Application\Parameter::__toInt() can't resolve numeric value!", E_USER_WARNING);
         return null;
+    }
+
+    /**
+     * __toJSON
+     *
+     * @param string $json
+     * @param bool $assoc
+     * @param int $depth
+     * @param int $options
+     * @return null|object
+     */
+    public function __toJSON( string $str , bool $assoc = false , int $depth = 512 , int $options = 0): object
+    {
+        $json = json_decode($str, $assoc, $depth, $options);
+        return json_last_error() === JSON_ERROR_NONE ? $json : null;
     }
 
     /**
