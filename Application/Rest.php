@@ -86,7 +86,7 @@ class Rest
             foreach ($params as $k => $v) {
                 $value = isset($this->owner->params[$v['name']]) ? $this->owner->params[$v['name']] : null;
                 if ((is_null($value) || empty(($value))) && isset($v['default'])) {
-                     $value = $v['default'];
+                     $value = (is_callable($v['default'])) ? call_user_func_array($v['default'], $this->arguments($v['default'])) : $v['default'];
                 }
                 if (!is_null($value) || $empty) {
                     if (isset($v['alias'])) $result[$v['alias']] = $value;
