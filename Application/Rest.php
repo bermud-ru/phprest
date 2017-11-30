@@ -61,9 +61,10 @@ class Rest
      * @param $source
      * @return mixed
      */
-    protected function init(array $params, &$source)
+    protected function init(array $params, &$source, $is_empty = true)
     {
         foreach ($params as $k => $v) {
+
             if ( is_array($v) && (isset($source[$v['name']]) || (isset($v['alias']) && isset($source[$v['alias']]))) ) {
                 (new \Application\Parameter($source, $v))->onError($this->error);
             }
@@ -88,7 +89,7 @@ class Rest
                 if ((is_null($value) || empty(($value))) && isset($v['default'])) {
                      $value = (is_callable($v['default'])) ? call_user_func_array($v['default'], $this->arguments($v['default'])) : $v['default'];
                 }
-                if (!is_null($value) || $empty) {
+                if (!is_null($value) || $empty || (isset($v['alias']) && strpos($v['alias'], '^') !== false)) {
                     if (isset($v['alias'])) $result[$v['alias']] = $value;
                     else $result[$v['name']] = $value;
                 }

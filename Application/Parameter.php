@@ -67,6 +67,7 @@ class Parameter implements \JsonSerializable
         }
 
         if (is_callable($this->after)) $this->value = call_user_func_array($this->after, $this->arguments($this->after));
+        //TODO more then one aliases
         if ($this->alias) $this->params[$this->alias] = $this;
         else $this->params[$this->name] = $this;
 
