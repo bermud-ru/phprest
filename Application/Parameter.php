@@ -23,7 +23,7 @@ class Parameter implements \JsonSerializable
     protected $validator = null;
     protected $message = null;
     protected $alert = '';
-    protected $requered = false;
+    protected $required = false;
     protected $isEmpty = false;
     protected $notValid = false;
     protected $before = null;
@@ -52,18 +52,20 @@ class Parameter implements \JsonSerializable
         $this->value = is_null($this->raw) ? $this->default : $this->raw ;
         if (is_callable($this->before)) $this->value = call_user_func_array($this->before, $this->arguments($this->before));
 
-        if ($this->requered && is_null($this->value)) {
+        //TODO error system for evryone
+        if (is_callable($this->required)) $this->required = call_user_func_array($this->required, $this->arguments($this->required));
+        if ($this->required && is_null($this->value)) {
             $this->isEmpty = true;
             $this->setMessage($opt['message'] ?? \Application\Parameter::MESSAGE, ['name' => $this->name, 'value'=>'NULL']);
         }
 
-        if (!empty($this->validator) && ($this->requered || $this->key || !empty($this->params[$this->name]))) {
+        if (!empty($this->validator) && ($this->required || $this->key || !empty($this->params[$this->name]))) {
             if (is_callable($this->validator)) {
                 $this->notValid = !call_user_func_array($this->validator, $this->arguments($this->validator));
             } elseif (is_string($this->validator) && !preg_match($this->validator, $this->value)) {
                 $this->notValid = true;
             }
-            if ($this->notValid ) $this->setMessage($opt['message'] ?? \Application\Parameter::MESSAGE, ['name' => $this->name, 'value'=>$this->value]);
+            if ($this->notValid && !(isset($params['required']) && $this->required || is_callable($params['required']) && $this->required)) $this->setMessage($opt['message'] ?? \Application\Parameter::MESSAGE, ['name' => $this->name, 'value'=>$this->value]);
         }
 
         if (is_callable($this->after)) $this->value = call_user_func_array($this->after, $this->arguments($this->after));

@@ -93,7 +93,7 @@ class Rest
                     if (isset($v['alias'])) $result[$v['alias']] = $value;
                     else $result[$v['name']] = $value;
                 }
-//                elseif (isset($v['requered']) && !$v['requered'] || !isset($v['requered'])) {
+//                elseif (isset($v['required']) && !$v['required'] || !isset($v['required'])) {
 //                    $result[$v['name']] = null;
 //                }
 
@@ -114,9 +114,11 @@ class Rest
 
         if ($this->checkPermission && !$this->isAllow($opt['field'] ?? ''))
             return $this->response('error', ['code' => '403', 'message' => 'Отказано в доступе / Permission denied']);
-        if (!count($this->error)) {
+
+        $params = [];$args = $this->arguments($this->action, $params);
+        if (!count($this->error) || in_array('error', $params)) {
             try {
-                $result = call_user_func_array($this->action, $this->arguments($this->action)) ?? [];
+                $result = call_user_func_array($this->action, $args) ?? [];
                 if (isset($result['error'])) $result['code'] = 417;
                 return $this->response(isset($result['error']) ? 'error' : ($opt['type'] ?? 'json'), $result);
             } catch (\Exception $e) {
@@ -147,9 +149,10 @@ class Rest
      * @param callable $fn
      * @return array
      */
-    protected function arguments(callable &$fn): array
+    protected function arguments(callable &$fn, &$args = []): array
     {
-        return array_map(function (&$item) {
+        return array_map(function (&$item) use(&$args) {
+            array_push($args, $item->name);
             switch (strtolower($item->name)){
                 case 'header':
                     $item->value = $this->owner->header;
@@ -173,6 +176,9 @@ class Rest
                     break;
                 case 'self':
                     $item->value = $this;
+                    break;
+                case 'error':
+                    $item->value = $this->error;
                     break;
                 case 'owner':
                     $item->value = $this->owner;
