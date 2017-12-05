@@ -162,9 +162,9 @@ class Parameter implements \JsonSerializable
      * @param int $options
      * @return null|object
      */
-    public function __toJSON( string $str , bool $assoc = false , int $depth = 512 , int $options = 0): object
+    public function __toJSON(bool $assoc = true , int $depth = 512 , int $options = 0): ?array
     {
-        $json = json_decode($str, $assoc, $depth, $options);
+        $json = json_decode($this->__toString(), $assoc, $depth, $options);
         return json_last_error() === JSON_ERROR_NONE ? $json : null;
     }
 
