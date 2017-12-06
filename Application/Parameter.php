@@ -19,7 +19,7 @@ class Parameter implements \JsonSerializable
     protected $name = null;
     protected $alias = null;
     protected $default = null;
-    protected $key = false;
+//    protected $key = false;
     protected $validator = null;
     protected $message = null;
     protected $alert = '';
@@ -47,19 +47,18 @@ class Parameter implements \JsonSerializable
         $this->opt = $opt;
 
         foreach ($opt as $k => $v) if (property_exists($this, $k)) $this->{$k} = $v;
-
+//TODO more then one aliases
         $this->raw = isset($params[$this->alias]) ? $params[$this->alias] : $params[$this->name];
         $this->value = is_null($this->raw) ? $this->default : $this->raw ;
         if (is_callable($this->before)) $this->value = call_user_func_array($this->before, $this->arguments($this->before));
 
-        //TODO error system for evryone
         if (is_callable($this->required)) $this->required = call_user_func_array($this->required, $this->arguments($this->required));
         if ($this->required && is_null($this->value)) {
             $this->isEmpty = true;
             $this->setMessage($opt['message'] ?? \Application\Parameter::MESSAGE, ['name' => $this->name, 'value'=>'NULL']);
         }
 
-        if (!empty($this->validator) && ($this->required || $this->key || !empty($this->params[$this->name]))) {
+        if (!empty($this->validator) && ($this->required || !empty($this->params[$this->name]))) {
             if (is_callable($this->validator)) {
                 $this->notValid = !call_user_func_array($this->validator, $this->arguments($this->validator));
             } elseif (is_string($this->validator) && !preg_match($this->validator, $this->value)) {
@@ -69,10 +68,34 @@ class Parameter implements \JsonSerializable
         }
 
         if (is_callable($this->after)) $this->value = call_user_func_array($this->after, $this->arguments($this->after));
-        //TODO more then one aliases
+//TODO more then one aliases
         if ($this->alias) $this->params[$this->alias] = $this;
         else $this->params[$this->name] = $this;
 
+    }
+
+    /**
+     * Init contex of property
+     *
+     * @param $p
+     */
+    protected function property($name, $default = null)
+    {
+        if (!property_exists($this, $name)) {
+            trigger_error("Application\Parameter::$name not exist!", E_USER_WARNING);
+            return $default;
+        }
+
+        $result = &$this->{$name};
+        if (is_callable($result)) {
+            $result = call_user_func_array($result, $this->arguments($result));
+            if ($result === false) {
+                trigger_error("Application\Parameter::$name run time error!", E_USER_WARNING);
+                return $default;
+            }
+        }
+
+        return $result ?? $default;
     }
 
     /**
