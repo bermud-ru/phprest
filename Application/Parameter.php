@@ -64,7 +64,7 @@ class Parameter implements \JsonSerializable
             } elseif (is_string($this->validator) && !preg_match($this->validator, $this->value)) {
                 $this->notValid = true;
             }
-            if ($this->notValid && !(isset($params['required']) && $this->required || is_callable($params['required']) && $this->required)) $this->setMessage($opt['message'] ?? \Application\Parameter::MESSAGE, ['name' => $this->name, 'value'=>$this->value]);
+            if ($this->notValid && !(isset($params['required']) && $this->required)) $this->setMessage($opt['message'] ?? \Application\Parameter::MESSAGE, ['name' => $this->name, 'value'=>$this->value]);
         }
 
         if (is_callable($this->after)) $this->value = call_user_func_array($this->after, $this->arguments($this->after));

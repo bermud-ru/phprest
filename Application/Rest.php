@@ -20,6 +20,7 @@ class Rest
     protected $method = 'GET';
     protected $action = null;
     protected $checkPermission = true;
+    protected $request = [];
 
     // Авторизованный пользватель, выполняющий Rest action
     public $user = null;
@@ -38,6 +39,7 @@ class Rest
     public function __construct(\Application\PHPRoll &$owner, array $opt)
     {
         $this->owner = $owner;
+        $this->request = $this->owner->params ?? [];
         if (isset($owner->acl) && $owner->acl) $this->user = $owner->acl; else $this->user = new \Application\ACL($owner, true);
         $this->method = strtolower($_SERVER['REQUEST_METHOD']);
         if (!isset($opt[$this->method]) && !isset($opt[$this->method]['action']) && !is_callable($opt[$this->method]['action'])) {
@@ -85,7 +87,7 @@ class Rest
         $result = [];
         if (count($params)) {
             foreach ($params as $k => $v) {
-                $value = isset($this->owner->params[$v['name']]) ? $this->owner->params[$v['name']] : null;
+                $value = isset($this->request[$v['name']]) ? $this->request[$v['name']] : null;
                 if ((is_null($value) || empty(($value))) && isset($v['default'])) {
                      $value = (is_callable($v['default'])) ? call_user_func_array($v['default'], $this->arguments($v['default'])) : $v['default'];
                 }
@@ -189,6 +191,24 @@ class Rest
             }
             return $item->value;
         }, (new \ReflectionFunction($fn))->getParameters());
+    }
+
+    /**
+     * Build params set from custom request array and params rules
+     *
+     * @param array $request
+     * @param array $params
+     * @param bool $flag
+     * @return array
+     */
+    public function __invoke(array $request, array $params, $flag = true ): array
+    {
+        $this->request = $request;
+
+        $response = $this->getParams($params, $flag);
+        $this->init($params, $response);
+
+        return $response;
     }
 
     /**
