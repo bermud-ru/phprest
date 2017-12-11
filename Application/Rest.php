@@ -117,8 +117,8 @@ class Rest
         if ($this->checkPermission && !$this->isAllow($opt['field'] ?? ''))
             return $this->response('error', ['code' => '403', 'message' => 'Отказано в доступе / Permission denied']);
 
-        $params = [];$args = $this->arguments($this->action, $params);
-        if (!count($this->error) || in_array('error', $params)) {
+        $p = [];$args = $this->arguments($this->action, $p);
+        if (!count($this->error) || in_array('error', $p)) {
             try {
                 $result = call_user_func_array($this->action, $args) ?? [];
                 if (isset($result['error'])) $result['code'] = 417;
