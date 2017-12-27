@@ -67,7 +67,7 @@ class Rest
     {
         foreach ($params as $k => $v) {
 
-            if ( is_array($v) && (isset($source[$v['name']]) || (isset($v['alias']) && isset($source[$v['alias']]))) ) {
+            if ( is_array($v) && ( isset($source[$v['name']]) || (isset($v['alias']) && isset($source[$v['alias']]) && ($is_empty || !empty($source[$v['alias']])))) ) {
                 (new \Application\Parameter($source, $v))->onError($this->error);
             }
         }
@@ -82,15 +82,22 @@ class Rest
      * @param bool $empty
      * @return array
      */
-    protected function getParams(array $params, $empty = true): array
+    protected function getParams(array &$params, $empty = true): array
     {
         $result = [];
         if (count($params)) {
             foreach ($params as $k => $v) {
+                if (is_array($v['name'])) {
+                    $p = array_intersect_key($this->request,array_flip($v['name']));
+                    $s = array_slice(($t = array_filter($p, function($v) {return($v !== null && $v !== '');},ARRAY_FILTER_USE_BOTH)),0,1);
+                    if (count($s)) $v['name'] = key($s); else $v['name'] = key($p);
+                }
+
                 $value = isset($this->request[$v['name']]) ? $this->request[$v['name']] : null;
                 if ((is_null($value) || empty(($value))) && isset($v['default'])) {
                      $value = (is_callable($v['default'])) ? call_user_func_array($v['default'], $this->arguments($v['default'])) : $v['default'];
                 }
+
                 if (!is_null($value) || $empty || (isset($v['alias']) && strpos($v['alias'], '^') !== false)) {
                     if (isset($v['alias'])) $result[$v['alias']] = $value;
                     else $result[$v['name']] = $value;
@@ -169,7 +176,7 @@ class Rest
                 case 'filter':
                     if (count($this->opt['filter']) && empty($this->filter)) {
                         $this->filter = $this->getParams($this->opt['filter'], false);
-                        $this->init($this->opt['filter'], $this->filter);
+                        $this->init($this->opt['filter'], $this->filter, false);
                     }
                     $item->value = &$this->filter;
                     break;

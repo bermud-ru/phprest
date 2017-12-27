@@ -47,7 +47,13 @@ class Parameter implements \JsonSerializable
         $this->opt = $opt;
 
         foreach ($opt as $k => $v) if (property_exists($this, $k)) $this->{$k} = $v;
-//TODO more then one aliases
+
+//        if (is_array($this->name)) {
+//            $p = array_intersect_key($params,array_flip($this->name));
+//            $s = array_slice(($t = array_filter($p, function($v) {return($v !== null && $v !== '');},ARRAY_FILTER_USE_BOTH)),0,1);
+//            if (count($s)) $this->name = key($s);  else $this->name = key($p);
+//        }
+
         $this->raw = isset($params[$this->alias]) ? $params[$this->alias] : $params[$this->name];
         $this->value = is_null($this->raw) ? $this->default : $this->raw ;
         if (is_callable($this->before)) $this->value = call_user_func_array($this->before, $this->arguments($this->before));
@@ -68,7 +74,7 @@ class Parameter implements \JsonSerializable
         }
 
         if (is_callable($this->after)) $this->value = call_user_func_array($this->after, $this->arguments($this->after));
-//TODO more then one aliases
+
         if ($this->alias) $this->params[$this->alias] = $this;
         else $this->params[$this->name] = $this;
 
