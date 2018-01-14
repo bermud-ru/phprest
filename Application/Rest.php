@@ -181,7 +181,7 @@ class Rest
                     $item->value = &$this->filter;
                     break;
                 case 'db':
-                    $item->value = isset($this->owner->db) ? $this->owner->db : new \Application\Db($this->owner, true);
+                    $item->value = isset($this->owner->db) ? $this->owner->db : new \Application\PDA($this->owner, true);
                     break;
                 case 'self':
                     $item->value = $this;

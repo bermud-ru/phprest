@@ -119,7 +119,7 @@ class Parameter implements \JsonSerializable
                     break;
                 default:
                     $name = explode(\Application\PHPRoll::KEY_SEPARATOR, strtolower($this->name));
-                    if (strtolower($item->name) == end($name) || (!empty($this->alias) && strtolower($item->name) == strtolower(\Application\Db::field($this->alias))) ) {
+                    if (strtolower($item->name) == end($name) || (!empty($this->alias) && strtolower($item->name) == strtolower(\Application\PDA::field($this->alias))) ) {
                         $item->value = &$this->value;
                     } else {
                         $item->value = null;
