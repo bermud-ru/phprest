@@ -94,7 +94,7 @@ class Rest
                 }
 
                 $value = isset($this->request[$v['name']]) ? $this->request[$v['name']] : null;
-                if ((is_null($value) || empty(($value))) && isset($v['default'])) {
+                if ((is_null($value) || $value === '') && isset($v['default'])) {
                      $value = (is_callable($v['default'])) ? call_user_func_array($v['default'], $this->arguments($v['default'])) : $v['default'];
                 }
 

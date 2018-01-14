@@ -26,13 +26,13 @@ class View extends \Application\PHPRoll
         $id = $params['id'] ?? $params['name'];
         if (empty($id)) trigger_error("Application\View::script(...) пустой идентификатор скрипта", E_USER_WARNING);
         $charset = isset($params['charset']) ? 'charset="'.$params['charset'].'"' : '';
-        $arguments = isset($params['arguments']) ? 'arguments="'.$params['arguments'].'"' : '';
-        $before = isset($params['before']) ? 'before="'.$params['before'].'"' : '';
-        $after = isset($params['after']) ? 'after="'.$params['after'].'"' : '';
+        $arguments = isset($params['arguments']) ? 'arguments="'.htmlspecialchars($params['arguments'],ENT_QUOTES).'"' : '';
+        $before = isset($params['before']) ? 'before="'.htmlspecialchars($params['before'],ENT_QUOTES).'"' : '';
+        $after = isset($params['after']) ? 'after="'.htmlspecialchars($params['after'],ENT_QUOTES).'"' : '';
         $opt = $params['opt'] ?? [];
         $vars = '';
         $a = array_intersect_key( $params, array_flip( preg_grep( '/^tmpl\-.*/i', array_keys( $params ))));
-        if (count($a)) array_walk($a, function(&$item, $key) use(&$vars) { $vars = $key.'="'.$item.'" '; });
+        if (count($a)) array_walk($a, function(&$item, $key) use(&$vars) { $vars = $key.'="'.htmlspecialchars($item,ENT_QUOTES).'" '; });
         $content =<<<EOT
 <script id="$id" type="text/x-template" $charset $arguments $vars $before $after>
 EOT;
@@ -49,9 +49,10 @@ EOT;
      *
      * @param string | array $script
      * @param boolean $permit
+     * @param boolean $deny
      * @return string
      */
-    public function partial($script, $permit = true): string 
+    public function partial($script, $permit = true, $deny = true): ?string
     {
         $permit = boolval($permit);
 
@@ -59,11 +60,11 @@ EOT;
             $idx = (count($script) == 2) && !$permit ? 1 : ($permit ? 0 : null);
             if (!is_null($idx)) return $this->context($script[$idx], ['self' => &$this]);
         } elseif (is_string($script)) {
-            return $this->context($script, ['self' => &$this, 'script' => $script, 'is_allow' => $permit]);
+            return $permit || !$permit && $deny ? $this->context($script, ['self' => &$this, 'script' => $script, 'is_allow' => $permit]) : null;
         }
 
         if (count($script) == 2) trigger_error("Application\View::partial($script) пустой идентификатор скрипта", E_USER_WARNING);
-        return '';
+        return null;
     }
 
     /**
