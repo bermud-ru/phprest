@@ -30,6 +30,7 @@ class Parameter implements \JsonSerializable
     protected $after = null;
     protected $formatter = null;
     protected $raw = null;
+    protected $restore = false;
 
     public $params = null;
     public $opt = [];
