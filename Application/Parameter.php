@@ -156,7 +156,7 @@ class Parameter implements \JsonSerializable
      *
      * @return string
      */
-    public function __toString(): string
+    public function __toString(): ?string
     {
         if (is_callable($this->formatter)) return call_user_func_array($this->formatter, $this->arguments($this->formatter));
         elseif (is_array($this->value)) return json_encode($this->value);
@@ -169,7 +169,7 @@ class Parameter implements \JsonSerializable
      *
      * @return int
      */
-    public function __toInt(): int
+    public function __toInt(): ?int
     {
         if (is_numeric($this->value)) return intval($this->value);
 
