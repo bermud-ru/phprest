@@ -66,9 +66,15 @@ class Rest
     protected function init(array $params, &$source, $is_empty = true)
     {
         foreach ($params as $k => $v) {
-
-            if ( is_array($v) && ( isset($source[$v['name']]) || (isset($v['alias']) && isset($source[$v['alias']]) && ($is_empty || !empty($source[$v['alias']])))) ) {
-                (new \Application\Parameter($source, $v))->onError($this->error);
+            if ( is_array($v) && (isset($source[$v['name']]) || (isset($v['alias']) && isset($source[$v['alias']]) && ($is_empty || !empty($source[$v['alias']])))) ) {
+                $item = (new \Application\Parameter($source, $v))->setOwner($this);
+                if (!$is_empty && is_null($item->value)) {
+                    if (isset($v['alias']) && isset($source[$v['alias']])) {
+                        unset($source[$v['alias']]);
+                    } elseif(isset($source[$v['name']])) {
+                        unset($source[$v['name']]);
+                    }
+                }
             }
         }
 

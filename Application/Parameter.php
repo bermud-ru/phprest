@@ -15,6 +15,9 @@ namespace Application;
 
 class Parameter implements \JsonSerializable
 {
+    protected $owner = null;
+    protected $alert = '';
+
     protected $index = null;
     protected $name = null;
     protected $alias = null;
@@ -22,7 +25,6 @@ class Parameter implements \JsonSerializable
 //    protected $key = false;
     protected $validator = null;
     protected $message = null;
-    protected $alert = '';
     protected $required = false;
     protected $isEmpty = false;
     protected $notValid = false;
@@ -73,6 +75,23 @@ class Parameter implements \JsonSerializable
         if ($this->alias) $this->params[$this->alias] = $this;
         else $this->params[$this->name] = $this;
 
+    }
+
+    /**
+     * Set Owner of parameter
+     *
+     * @param object $owner
+     * @return null|object
+     */
+    public function setOwner(&$owner)
+    {
+        $this->owner = $owner;
+        if ($owner && $this->alert) {
+            if (!isset($owner->error['error'])) $owner->error['error'] = [];
+            $owner->error['error'] = array_merge($owner->error['error'], [$this->name => $this->alert]);
+        }
+
+        return $this;
     }
 
     /**
@@ -136,19 +155,8 @@ class Parameter implements \JsonSerializable
     public function setMessage($message, $opt)
     {
         $this->alert = \Application\PHPRoll::formatter($message ? $message: "Parameter error %(name)s!", $opt);
-    }
 
-    /**
-     * Event on error inti parameter
-     *
-     * @param array $error
-     */
-    public function onError(array &$error)
-    {
-        if ($this->alert) {
-            if (!isset($error['error'])) $error['error'] = [];
-            $error['error'] = array_merge($error['error'], [$this->name => $this->alert]);
-        }
+        return $this;
     }
 
     /**
