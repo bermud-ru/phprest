@@ -160,6 +160,16 @@ class Parameter implements \JsonSerializable
     }
 
     /**
+     *
+     * @return int|null
+     */
+    public function count(): ?int
+    {
+        if (!empty($this->value) && (is_array($this->value) || $this->value instanceof \Countable)) return count($this->value);
+        return null;
+    }
+
+    /**
      * __toString
      *
      * @return string
@@ -204,12 +214,12 @@ class Parameter implements \JsonSerializable
      * \JsonSerializable interface release
      * @return mixed|null
      */
-    public function jsonSerialize() 
+    public function jsonSerialize(): ?string
     {
-        if (is_callable($this->formatter)) return call_user_func_array($this->formatter, $this->arguments($this->formatter));
-        elseif (is_array($this->value)) return json_encode($this->value);
-
-        return $this->value;//$this->raw;
+//        if (is_callable($this->formatter)) return call_user_func_array($this->formatter, $this->arguments($this->formatter));
+//        elseif (is_array($this->value) || is_object($this->value)) return json_encode($this->value);
+        return json_encode($this->value);
+//        return $this->value;//$this->raw;
     }
 
     /**
