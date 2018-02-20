@@ -101,7 +101,7 @@ class Rest
 
                 $value = isset($this->request[$v['name']]) ? $this->request[$v['name']] : null;
                 if ((is_null($value) || $value === '') && isset($v['default'])) {
-                     $value = (is_callable($v['default'])) ? call_user_func_array($v['default'], $this->arguments($v['default'])) : $v['default'];
+                     $value = (is_callable($v['default'])) ? call_user_func_array($v['default']->bindTo($this), $this->arguments($v['default'])) : $v['default'];
                 }
 
                 if (!is_null($value) || $empty || (isset($v['alias']) && strpos($v['alias'], '^') !== false)) {
@@ -126,14 +126,13 @@ class Rest
      */
     public function dispatcher(array $opt=[])
     {
-
         if ($this->checkPermission && !$this->isAllow($opt['field'] ?? ''))
             return $this->response('error', ['code' => '403', 'message' => 'Отказано в доступе / Permission denied']);
 
         $p = [];$args = $this->arguments($this->action, $p);
         if (!count($this->error) || in_array('error', $p)) {
             try {
-                $result = call_user_func_array($this->action, $args) ?? [];
+                $result = call_user_func_array($this->action->bindTo($this), $args) ?? [];
                 if (isset($result['error'])) $result['code'] = 417;
                 return $this->response(isset($result['error']) ? 'error' : ($opt['type'] ?? 'json'), $result);
             } catch (\Exception $e) {
