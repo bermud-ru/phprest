@@ -101,7 +101,7 @@ class Rest
 
                 $value = isset($this->request[$v['name']]) ? $this->request[$v['name']] : null;
                 if ((is_null($value) || $value === '') && isset($v['default'])) {
-                     $value = (is_callable($v['default'])) ? call_user_func_array($v['default']->bindTo($this), $this->arguments($v['default'])) : $v['default'];
+                     $value = (is_callable($v['default'])) ? call_user_func_array($v['default'], $this->arguments($v['default'])) : $v['default'];
                 }
 
                 if (!is_null($value) || $empty || (isset($v['alias']) && strpos($v['alias'], '^') !== false)) {
@@ -188,9 +188,9 @@ class Rest
                 case 'db':
                     $item->value = isset($this->owner->db) ? $this->owner->db : new \Application\PDA($this->owner, true);
                     break;
-                case 'self':
-                    $item->value = $this;
-                    break;
+//                case 'self':
+//                    $item->value = $this;
+//                    break;
                 case 'error':
                     $item->value = $this->error;
                     break;
