@@ -16,19 +16,16 @@ class Rest
 {
     protected $owner = null;
     protected $acl = [];
-    protected $opt = ['params'=>[],'filter'=>[]];
     protected $method = 'GET';
     protected $action = null;
     protected $checkPermission = true;
     protected $request = [];
+    protected $opt = [];
 
     // Авторизованный пользватель, выполняющий Rest action
     public $user = null;
     // Контейнер сообщений об ошибках
     public $error = [];
-
-    public $params = [];
-    public $filter = [];
 
     /**
      * Rest constructor.
@@ -47,10 +44,7 @@ class Rest
         } else {
             $this->checkPermission = isset($opt[$this->method]['permission']) ? boolval($opt[$this->method]['permission']) :
                                    ( isset($opt['permission']) ? boolval($opt['permission']) : true );
-
-            $this->opt['params'] = in_array(strtoupper($this->method),['POST','PUT']) ? array_merge($opt['common'] ?? [], $opt[$this->method]['params'] ?? $opt['params'] ?? []) : $opt[$this->method]['params'] ?? $opt['params'] ?? [];
-            $this->opt['filter'] = $opt[$this->method]['filter'] ?? [];
-
+            $this->opt = $opt;
             $this->acl = array_merge($opt['acl'] ?? [], $opt[$this->method]['acl'] ?? []);
             $this->action = $opt[$this->method]['action'];
         }
@@ -63,18 +57,11 @@ class Rest
      * @param $source
      * @return mixed
      */
-    protected function init(array $params, &$source, $is_empty = true)
+    protected function initParams(array $params, &$source)
     {
         foreach ($params as $k => $v) {
-            if ( is_array($v) && (isset($source[$v['name']]) || (isset($v['alias']) && isset($source[$v['alias']]) && ($is_empty || !empty($source[$v['alias']])))) ) {
-                $item = (new \Application\Parameter($source, $v))->setOwner($this);
-                if (!$is_empty && is_null($item->value)) {
-                    if (isset($v['alias']) && isset($source[$v['alias']])) {
-                        unset($source[$v['alias']]);
-                    } elseif(isset($source[$v['name']])) {
-                        unset($source[$v['name']]);
-                    }
-                }
+            if ( is_array($v) && (isset($source[$v['name']]) || (isset($v['alias']) && isset($source[$v['alias']])) ) ) {
+                $source[(isset($v['alias']) ? $v['alias']:$v['name'])] = (new \Application\Parameter($v,$source))->setOwner($this);
             }
         }
 
@@ -91,6 +78,7 @@ class Rest
     protected function getParams(array &$params, $empty = true): array
     {
         $result = [];
+
         if (count($params)) {
             foreach ($params as $k => $v) {
                 if (is_array($v['name'])) {
@@ -100,20 +88,17 @@ class Rest
                 }
 
                 $value = isset($this->request[$v['name']]) ? $this->request[$v['name']] : null;
+
                 if ((is_null($value) || $value === '') && isset($v['default'])) {
-                     $value = (is_callable($v['default'])) ? call_user_func_array($v['default'], $this->arguments($v['default'])) : $v['default'];
+                     $value = (is_callable($v['default'])) ? call_user_func_array($v['default']->bindTo($this->owner), $this->arguments($v['default'])) : $v['default'];
                 }
 
-                if (!is_null($value) || $empty || (isset($v['alias']) && strpos($v['alias'], '^') !== false)) {
-                    if (isset($v['alias'])) $result[$v['alias']] = $value;
-                    else $result[$v['name']] = $value;
+                if (!is_null($value) || $empty) {
+                   $result[(isset($v['alias']) ? $v['alias']:$v['name'])] = $value;
                 }
-//                elseif (isset($v['required']) && !$v['required'] || !isset($v['required'])) {
-//                    $result[$v['name']] = null;
-//                }
-
             }
         }
+
         return $result;
     }
 
@@ -158,6 +143,27 @@ class Rest
     }
 
     /**
+     * @param array $p
+     * @param callable|null $cb
+     * @return array
+     */
+    public function filter(array &$p, callable  $cb = null): array
+    {
+//        if (is_null($cb)) $cb = function($v){return $v !== false && !is_null($v) && ($v != '' || $v == '0'); };
+        if (is_null($cb)) $cb = function($v){return $v !== null && $v != ''; };
+
+        return array_filter($p, $cb,ARRAY_FILTER_USE_BOTH);
+    }
+
+    protected function paramsBykey($pattern, $a)
+    {
+        $keys = array_values(preg_grep($pattern, array_keys($a)));
+
+        if (count($keys)) return [$keys[0],$a[$keys[0]]];
+        return [null,null];
+    }
+
+    /**
      * Prepare args for closure
      *
      * @param callable $fn
@@ -167,30 +173,14 @@ class Rest
     {
         return array_map(function (&$item) use(&$args) {
             array_push($args, $item->name);
-            switch (strtolower($item->name)){
+            $name  = strtolower($item->name);
+            switch ($name){
                 case 'header':
                     $item->value = $this->owner->header;
-                    break;
-                case 'params':
-                    if (count($this->opt['params']) && empty($this->params)) {
-                        $this->params = $this->getParams($this->opt['params'], true);
-                        $this->init($this->opt['params'], $this->params);
-                    }
-                    $item->value = &$this->params;
-                    break;
-                case 'filter':
-                    if (count($this->opt['filter']) && empty($this->filter)) {
-                        $this->filter = $this->getParams($this->opt['filter'], false);
-                        $this->init($this->opt['filter'], $this->filter, false);
-                    }
-                    $item->value = &$this->filter;
                     break;
                 case 'db':
                     $item->value = isset($this->owner->db) ? $this->owner->db : new \Application\PDA($this->owner, true);
                     break;
-//                case 'self':
-//                    $item->value = $this;
-//                    break;
                 case 'error':
                     $item->value = $this->error;
                     break;
@@ -200,6 +190,20 @@ class Rest
                 case 'user':
                     $item->value = $this->user ?? [];
                     break;
+                default:
+                    list($key, $params) = $this->paramsBykey("/^!*$name$/i", $this->opt[$this->method]);
+                    if (is_null($key)) list($key, $params) = $this->paramsBykey("/^!*$name$/i", $this->opt);
+//TODO: difernt values in config
+                    if (is_null($key)) {
+                        $item->value = null;
+                    } else {
+                        $is_filter = strpos($key, '!') === false; //TODO: fprefix & sufix
+                        if (is_array($params)) {
+                            $swap = $this->getParams($params, $is_filter);
+                            $item->value = $this->initParams($params,$swap );
+                        }
+                        else $item->value = [];
+                    }
             }
             return $item->value;
         }, (new \ReflectionFunction($fn))->getParameters());
@@ -216,11 +220,8 @@ class Rest
     public function __invoke(array $request, array $params, $flag = true ): array
     {
         $this->request = $request;
-
-        $response = $this->getParams($params, $flag);
-        $this->init($params, $response);
-
-        return $response;
+        $swap = $this->getParams($params, $flag);
+        return $this->initParams($params,$swap );
     }
 
     /**

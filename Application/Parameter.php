@@ -26,7 +26,6 @@ class Parameter implements \JsonSerializable
     protected $validator = null;
     protected $message = null;
     protected $required = false;
-    protected $isEmpty = false;
     protected $notValid = false;
     protected $before = null;
     protected $after = null;
@@ -35,7 +34,6 @@ class Parameter implements \JsonSerializable
     protected $restore = false;
 
     public $params = null;
-    public $opt = [];
     public $value = null;
 
     const MESSAGE = "\Application\Parameter::message %(name)s %(value)s!";
@@ -45,36 +43,35 @@ class Parameter implements \JsonSerializable
      * @param $parent \Application\Rest
      * @param array $opt
      */
-    public function __construct( array &$params, array $opt ){
+    public function __construct( array $opt, array &$params ){
         $this->params = &$params;
-        $this->opt = $opt;
 
-        foreach ($opt as $k => $v) if (property_exists($this, $k)) $this->{$k} = $v;
-        
+        foreach ($opt as $k => $v) { if (property_exists($this, $k)) $this->{$k} = $v; }
+
         $this->raw = isset($params[$this->alias]) ? $params[$this->alias] : $params[$this->name];
         $this->value = is_null($this->raw) ? $this->default : $this->raw ;
+
+
         if (is_callable($this->before)) $this->value = call_user_func_array($this->before, $this->arguments($this->before));
-
         if (is_callable($this->required)) $this->required = call_user_func_array($this->required, $this->arguments($this->required));
+
+
         if ($this->required && (is_null($this->value) || $this->value === '')) {
-            $this->isEmpty = true;
             $this->setMessage($opt['message'] ?? \Application\Parameter::MESSAGE, ['name' => $this->name, 'value'=>strval($this->value)]);
-        }
-
-        if (!empty($this->validator) && $this->required) {
-            if (is_callable($this->validator)) {
-                $this->notValid = !call_user_func_array($this->validator, $this->arguments($this->validator));
-            } elseif (is_string($this->validator) && !preg_match($this->validator, $this->value)) {
-                $this->notValid = true;
+        } else {
+            if (!empty($this->validator) && $this->required) {
+                if (is_callable($this->validator)) {
+                    $this->notValid = !call_user_func_array($this->validator, $this->arguments($this->validator));
+                } elseif (is_string($this->validator) && !preg_match($this->validator, $this->value)) {
+                    $this->notValid = true;
+                }
+                if ($this->notValid && !(isset($params['required']) && $this->required)) $this->setMessage($opt['message'] ?? \Application\Parameter::MESSAGE, ['name' => $this->name, 'value' => $this->value]);
             }
-            if ($this->notValid && !(isset($params['required']) && $this->required)) $this->setMessage($opt['message'] ?? \Application\Parameter::MESSAGE, ['name' => $this->name, 'value'=>$this->value]);
+
+            if (is_callable($this->after)) $this->value = call_user_func_array($this->after, $this->arguments($this->after));
         }
 
-        if (is_callable($this->after)) $this->value = call_user_func_array($this->after, $this->arguments($this->after));
-
-        if ($this->alias) $this->params[$this->alias] = $this;
-        else $this->params[$this->name] = $this;
-
+        $this->params[$this->alias ? $this->alias : $this->name] = $this;
     }
 
     /**
@@ -128,11 +125,11 @@ class Parameter implements \JsonSerializable
     {
         return array_map(function (&$item) {
             switch (strtolower($item->name)) {
-                case 'params':
-                    $item->value = &$this->params;
-                    break;
                 case 'self':
                     $item->value = &$this;
+                    break;
+                case 'params':
+                    $item->value = &$this->params;
                     break;
                 case 'raw':
                     $item->value = &$this->raw;
@@ -227,7 +224,7 @@ class Parameter implements \JsonSerializable
      *
      * @return array
      */
-    public function __sleep(): array 
+    public function __sleep(): array
     {
         return [$this->alias ?? $this->name => $this->restore ? $this->raw : $this->value];
     }
@@ -236,7 +233,8 @@ class Parameter implements \JsonSerializable
      *
      * @return array
      */
-    public function __debugInfo() {
+    public function __debugInfo()
+    {
         return [ $this->alias ?? $this->name => $this->restore ? $this->raw : $this->value ];
     }
 }
