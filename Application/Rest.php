@@ -44,9 +44,13 @@ class Rest
         } else {
             $this->checkPermission = isset($opt[$this->method]['permission']) ? boolval($opt[$this->method]['permission']) :
                                    ( isset($opt['permission']) ? boolval($opt['permission']) : true );
-            $this->opt = $opt;
-            $this->acl = array_merge($opt['acl'] ?? [], $opt[$this->method]['acl'] ?? []);
-            $this->action = $opt[$this->method]['action'];
+            if ($this->checkPermission && !$this->isAllow($opt['field'] ?? '')) {
+                $this->error = ['code' => '403', 'message' => 'Отказано в доступе / Permission denied'];
+            } else {
+                $this->opt = $opt;
+                $this->acl = array_merge($opt['acl'] ?? [], $opt[$this->method]['acl'] ?? []);
+                $this->action = $opt[$this->method]['action'];
+            }
         }
     }
 
@@ -111,13 +115,9 @@ class Rest
      */
     public function dispatcher(array $opt=[])
     {
-        if ($this->checkPermission && !$this->isAllow($opt['field'] ?? ''))
-            return $this->response('error', ['code' => '403', 'message' => 'Отказано в доступе / Permission denied']);
-
-        $p = [];$args = $this->arguments($this->action, $p);
-        if (!count($this->error) || in_array('error', $p)) {
+        if (!count($this->error)) {
             try {
-                $result = call_user_func_array($this->action->bindTo($this), $args) ?? [];
+                $result = call_user_func_array($this->action->bindTo($this), $this->arguments($this->action)) ?? [];
                 if (isset($result['error'])) $result['code'] = 417;
                 return $this->response(isset($result['error']) ? 'error' : ($opt['type'] ?? 'json'), $result);
             } catch (\Exception $e) {
@@ -169,10 +169,9 @@ class Rest
      * @param callable $fn
      * @return array
      */
-    protected function arguments(callable &$fn, &$args = []): array
+    protected function arguments(callable &$fn): array
     {
-        return array_map(function (&$item) use(&$args) {
-            array_push($args, $item->name);
+        return array_map(function (&$item) {
             $name  = strtolower($item->name);
             switch ($name){
                 case 'header':
