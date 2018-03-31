@@ -38,19 +38,16 @@ class Rest
         $this->owner = $owner;
         $this->request = $this->owner->params ?? [];
         if (isset($owner->acl) && $owner->acl) $this->user = $owner->acl; else $this->user = new \Application\ACL($owner, true);
+
         $this->method = strtolower($_SERVER['REQUEST_METHOD']);
         if (!isset($opt[$this->method]) && !isset($opt[$this->method]['action']) && !is_callable($opt[$this->method]['action'])) {
             $this->error = ['code' => '404','message'=>"//$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI] action[$this->method] not supported"];
         } else {
             $this->checkPermission = isset($opt[$this->method]['permission']) ? boolval($opt[$this->method]['permission']) :
                                    ( isset($opt['permission']) ? boolval($opt['permission']) : true );
-            if ($this->checkPermission && !$this->isAllow($opt['field'] ?? '')) {
-                $this->error = ['code' => '403', 'message' => 'Отказано в доступе / Permission denied'];
-            } else {
-                $this->opt = $opt;
-                $this->acl = array_merge($opt['acl'] ?? [], $opt[$this->method]['acl'] ?? []);
-                $this->action = $opt[$this->method]['action'];
-            }
+            $this->opt = $opt;
+            $this->acl = array_merge($opt['acl'] ?? [], $opt[$this->method]['acl'] ?? []);
+            $this->action = $opt[$this->method]['action'];
         }
     }
 
@@ -79,7 +76,7 @@ class Rest
      * @param bool $empty
      * @return array
      */
-    protected function getParams(array &$params, $empty = true): array
+    protected function getParams(array &$params, $is_filter = true): array
     {
         $result = [];
 
@@ -93,11 +90,11 @@ class Rest
 
                 $value = isset($this->request[$v['name']]) ? $this->request[$v['name']] : null;
 
-                if ((is_null($value) || $value === '') && isset($v['default'])) {
+                if ((is_null($value) || $value == '') && isset($v['default'])) {
                      $value = (is_callable($v['default'])) ? call_user_func_array($v['default']->bindTo($this->owner), $this->arguments($v['default'])) : $v['default'];
                 }
 
-                if (!is_null($value) || $empty) {
+                if (($is_filter && $value !== null && $value !== '') || !$is_filter) {
                    $result[(isset($v['alias']) ? $v['alias']:$v['name'])] = $value;
                 }
             }
@@ -115,6 +112,10 @@ class Rest
      */
     public function dispatcher(array $opt=[])
     {
+        if ($this->checkPermission && !$this->isAllow($opt['field'] ?? '')) {
+            $this->error =  ['code' => '403', 'message' => 'Отказано в доступе / Permission denied'];
+        }
+
         if (!count($this->error)) {
             try {
                 $result = call_user_func_array($this->action->bindTo($this), $this->arguments($this->action)) ?? [];
@@ -150,7 +151,7 @@ class Rest
     public function filter(array &$p, callable  $cb = null): array
     {
 //        if (is_null($cb)) $cb = function($v){return $v !== false && !is_null($v) && ($v != '' || $v == '0'); };
-        if (is_null($cb)) $cb = function($v){return $v !== null && $v != ''; };
+        if (is_null($cb)) $cb = function($v){return $v !== null && $v !== ''; };
 
         return array_filter($p, $cb,ARRAY_FILTER_USE_BOTH);
     }
@@ -196,7 +197,7 @@ class Rest
                     if (is_null($key)) {
                         $item->value = null;
                     } else {
-                        $is_filter = strpos($key, '!') === false; //TODO: fprefix & sufix
+                        $is_filter = strpos($key, '!') !== false; //TODO: fprefix & sufix
                         if (is_array($params)) {
                             $swap = $this->getParams($params, $is_filter);
                             $item->value = $this->initParams($params,$swap );
