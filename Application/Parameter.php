@@ -211,12 +211,9 @@ class Parameter implements \JsonSerializable
      * \JsonSerializable interface release
      * @return mixed|null
      */
-    public function jsonSerialize(): ?string
+    public function jsonSerialize()
     {
-//        if (is_callable($this->formatter)) return call_user_func_array($this->formatter, $this->arguments($this->formatter));
-//        elseif (is_array($this->value) || is_object($this->value)) return json_encode($this->value);
-        return json_encode($this->value,JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_NUMERIC_CHECK);
-//        return $this->value;//$this->raw;
+        return \Application\PDA::parameterize($this->value);
     }
 
     /**
@@ -234,7 +231,7 @@ class Parameter implements \JsonSerializable
      * @return array
      */
     public function __debugInfo() {
-        return [ $this->alias ?? $this->name => $this->restore ? $this->raw : $this->value ];
+        return [ $this->alias ?? $this->name => \Application\PDA::parameterize($this->restore ? $this->raw : $this->value) ];
     }
 }
 ?>

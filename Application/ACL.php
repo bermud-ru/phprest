@@ -68,7 +68,7 @@ class ACL
      */
     public function __get(string $field)
     {
-        return count($this->user) && isset($this->user[$field]) ? $this->user[$field] : null;
+        return count($this->user) && isset($this->user[$field]) ? \Application\PDA::parameterize($this->user[$field]) : null;
     }
 
     /**
@@ -77,7 +77,7 @@ class ACL
      */
     public function __invoke(string $field)
     {
-        return count($this->user) && isset($this->user[$field]) ? $this->user[$field] : null;
+        return count($this->user) && isset($this->user[$field]) ? \Application\PDA::parameterize($this->user[$field]) : null;
     }
 
     /**
