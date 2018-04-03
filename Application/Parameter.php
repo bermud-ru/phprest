@@ -215,7 +215,7 @@ class Parameter implements \JsonSerializable
     {
 //        if (is_callable($this->formatter)) return call_user_func_array($this->formatter, $this->arguments($this->formatter));
 //        elseif (is_array($this->value) || is_object($this->value)) return json_encode($this->value);
-        return json_encode($this->value,JSON_UNESCAPED_UNICODE);
+        return json_encode($this->value,JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_NUMERIC_CHECK);
 //        return $this->value;//$this->raw;
     }
 
