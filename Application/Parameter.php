@@ -48,7 +48,7 @@ class Parameter implements \JsonSerializable
 
         foreach ($opt as $k => $v) { if (property_exists($this, $k)) $this->{$k} = $v; }
 
-        $this->raw = isset($params[$this->alias]) ? $params[$this->alias] : $params[$this->name];
+        $this->raw = isset($params[$this->alias]) ? $params[$this->alias] : (isset($params[$this->name]) ? $params[$this->name] : null);
         $this->value = is_null($this->raw) ? $this->default : $this->raw ;
 
 
@@ -75,12 +75,31 @@ class Parameter implements \JsonSerializable
     }
 
     /**
+     * Create custom parameter and add to poll
+     *
+     * @param array $fields
+     * @param array $params
+     * @return bool
+     */
+    public static function append(array $fields, array &$params):bool
+    {
+        if (\Application\PHPRoll::is_assoc($fields)) {
+            foreach ($fields as $k => $v) {
+               new \Application\Parameter(['name'=>$k, 'default'=>$v],$params);
+            }
+            return true;
+        }
+        trigger_error("Application\Parameter() creation error!", E_USER_WARNING);
+        return false;
+    }
+
+     /**
      * Set Owner of parameter
      *
      * @param object $owner
      * @return null|object
      */
-    public function setOwner(&$owner)
+    public function setOwner(&$owner):\Application\Parameter
     {
         $this->owner = $owner;
         if ($owner && $this->alert) {
@@ -149,7 +168,7 @@ class Parameter implements \JsonSerializable
      * Set error message
      * @param $e
      */
-    public function setMessage($message, $opt)
+    public function setMessage($message, $opt):\Application\Parameter
     {
         $this->alert = \Application\PHPRoll::formatter($message ? $message: "Parameter error %(name)s!", $opt);
 
