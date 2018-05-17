@@ -113,20 +113,13 @@ class Rest
     public function dispatcher(array $opt=[])
     {
         if ($this->checkPermission && !$this->isAllow($opt['field'] ?? '')) {
-            $this->error =  ['code' => '403', 'message' => 'Отказано в доступе / Permission denied'];
+            $result = ['result'=> 'error', 'message' => 'Отказано в доступе / Permission denied'];
+        } elseif (count($this->error)) {
+            $result = ['result'=> 'error', 'error' => $this->error];
+        } else {
+            $result = call_user_func_array($this->action->bindTo($this), $this->arguments($this->action));
         }
-
-        if (!count($this->error)) {
-            try {
-                $result = call_user_func_array($this->action->bindTo($this), $this->arguments($this->action)) ?? [];
-                if (isset($result['error'])) $result['code'] = 417;
-                return $this->response(isset($result['error']) ? 'error' : ($opt['type'] ?? 'json'), $result);
-            } catch (\Exception $e) {
-                return $this->response('error', ['code' => '400', 'message'=> $e->getMessage()]);
-            }
-        }
-
-        return $this->response('error', $this->error);
+        return $this->response('json', $result);
     }
 
     /**
