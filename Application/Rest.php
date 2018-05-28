@@ -65,7 +65,6 @@ class Rest
                 $source[(isset($v['alias']) ? $v['alias']:$v['name'])] = (new \Application\Parameter($v,$source))->setOwner($this);
             }
         }
-
         return $source;
     }
 
@@ -114,10 +113,13 @@ class Rest
     {
         if ($this->checkPermission && !$this->isAllow($opt['field'] ?? '')) {
             $result = ['result'=> 'error', 'message' => 'Отказано в доступе / Permission denied'];
-        } elseif (count($this->error)) {
-            $result = ['result'=> 'error', 'error' => $this->error];
         } else {
-            $result = call_user_func_array($this->action->bindTo($this), $this->arguments($this->action));
+            $arg = $this->arguments($this->action);
+            if (count($this->error)) {
+                $result = ['result'=> 'error', 'message' => $this->error];
+            } else {
+                $result = call_user_func_array($this->action->bindTo($this), $arg);
+            }
         }
         return $this->response('json', $result);
     }

@@ -103,8 +103,8 @@ class Parameter implements \JsonSerializable
     {
         $this->owner = $owner;
         if ($owner && $this->alert) {
-            if (!isset($owner->error['error'])) $owner->error['error'] = [];
-            $owner->error['error'] = array_merge($owner->error['error'], [$this->name => $this->alert]);
+            if (!isset($owner->error)) $owner->error = [];
+            $owner->error[$this->name] = $this->alert;
         }
 
         return $this;
@@ -171,7 +171,6 @@ class Parameter implements \JsonSerializable
     public function setMessage($message, $opt):\Application\Parameter
     {
         $this->alert = \Application\PHPRoll::formatter($message ? $message: "Parameter error %(name)s!", $opt);
-
         return $this;
     }
 
