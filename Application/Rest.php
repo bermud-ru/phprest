@@ -112,6 +112,7 @@ class Rest
     public function dispatcher(array $opt=[])
     {
         if ($this->checkPermission && !$this->isAllow($opt['field'] ?? '')) {
+            $this->owner->response_header['Action-Status'] = 'Permission denied!';
             $result = ['result'=> 'error', 'message' => 'Отказано в доступе / Permission denied'];
         } else {
             $arg = $this->arguments($this->action);
