@@ -21,6 +21,7 @@ class Rest
     protected $checkPermission = true;
     protected $request = [];
     protected $opt = [];
+    protected $is_filter = false;
 
     // Авторизованный пользватель, выполняющий Rest action
     public $user = null;
@@ -62,7 +63,12 @@ class Rest
     {
         foreach ($params as $k => $v) {
             if ( is_array($v) && (isset($source[$v['name']]) || (isset($v['alias']) && isset($source[$v['alias']])) ) ) {
-                $source[(isset($v['alias']) ? $v['alias']:$v['name'])] = (new \Application\Parameter($v,$source))->setOwner($this);
+                $param = (new \Application\Parameter($v,$source))->setOwner($this);
+                if ($this->is_filter && $param->value === null) {
+                    unset($source[(isset($v['alias']) ? $v['alias']:$v['name'])]);
+                } else {
+                    $source[(isset($v['alias']) ? $v['alias'] : $v['name'])] = $param;
+                }
             }
         }
         return $source;
@@ -92,6 +98,8 @@ class Rest
                 if ((is_null($value) || $value == '') && isset($v['default'])) {
                      $value = (is_callable($v['default'])) ? call_user_func_array($v['default']->bindTo($this->owner), $this->arguments($v['default'])) : $v['default'];
                 }
+
+                $this->is_filter = $is_filter;
 
                 if (($is_filter && $value !== null && $value !== '') || !$is_filter) {
                    $result[(isset($v['alias']) ? $v['alias']:$v['name'])] = $value;
