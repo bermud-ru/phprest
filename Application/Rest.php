@@ -180,7 +180,10 @@ class Rest
             $name  = strtolower($item->name);
             switch ($name){
                 case 'header':
-                    $item->value = $this->owner->header;
+                    $item->value = $this->owner->header??[];
+                    break;
+                case 'cfg':
+                    $item->value = $this->owner->config??[];
                     break;
                 case 'db':
                     $item->value = isset($this->owner->db) ? $this->owner->db : new \Application\PDA($this->owner, true);
