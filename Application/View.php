@@ -15,7 +15,7 @@ namespace Application;
 class View extends \Application\PHPRoll
 {
     /**
-     * script
+     * @function script
      *
      * @param array $params
      * @return string
@@ -45,7 +45,7 @@ EOT;
     }
 
     /**
-     * partial
+     * @function partial
      *
      * @param string | array $script
      * @param boolean $permit
@@ -68,6 +68,7 @@ EOT;
     }
 
     /**
+     * @function getPattern
      * for RESTfull request
      *
      * @param array $opt
@@ -82,6 +83,12 @@ EOT;
         return parent::tpl($this->path, $opt);
     }
 
+    /**
+     * @function is
+     * 
+     * @param $type
+     * @return bool
+     */
     public function is($type){
         if (is_array($type)) return in_array(strtoupper($_SERVER['REQUEST_METHOD']), $type);
         return strtoupper($type) == strtoupper($_SERVER['REQUEST_METHOD']);

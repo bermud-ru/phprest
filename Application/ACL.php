@@ -38,7 +38,7 @@ class ACL
                     if (!array_diff($params, array_keys($app->header))) $params = array_intersect_key($app->header, array_flip($fields[1]));
                     else $params = array_intersect_key($app->params, array_flip($fields[1]));
                 }
-                $db = isset($app->db) ? $app->db : new \Application\PDA($app, true);
+                $db = isset($app->db) ? $app->db : new \Application\PDA($app->config['db']);
                 //echo '<textarea>'; var_dump($params); echo '</testarea>';exit;
                 $this->user = count($params) ? $db->stmt($app->config['user'], $params)->fetch() : null;
                 if ($attach) {
@@ -51,6 +51,8 @@ class ACL
     }
 
     /**
+     * @function group
+     *
      * @param string $field
      * @return string | null
      */
@@ -81,7 +83,7 @@ class ACL
     }
 
     /**
-     * in
+     * @function in
      *
      * @param string $field
      * @param array $roles

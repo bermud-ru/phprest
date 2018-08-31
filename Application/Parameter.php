@@ -20,6 +20,7 @@ class Parameter implements \JsonSerializable
 
     protected $index = null;
     protected $name = null;
+    protected $type = null;
     protected $alias = null;
     protected $default = null;
 //    protected $key = false;
@@ -75,6 +76,7 @@ class Parameter implements \JsonSerializable
     }
 
     /**
+     * @function append
      * Create custom parameter and add to poll
      *
      * @param array $fields
@@ -93,12 +95,13 @@ class Parameter implements \JsonSerializable
         return false;
     }
 
-     /**
-     * Set Owner of parameter
-     *
-     * @param object $owner
-     * @return null|object
-     */
+    /**
+    * @function setOwner
+    * Set Owner of parameter
+    *
+    * @param object $owner
+    * @return null|object
+    */
     public function setOwner(&$owner):\Application\Parameter
     {
         $this->owner = $owner;
@@ -111,6 +114,7 @@ class Parameter implements \JsonSerializable
     }
 
     /**
+     * @function property
      * Init contex of property
      *
      * @param $p
@@ -135,6 +139,7 @@ class Parameter implements \JsonSerializable
     }
 
     /**
+     * @function arguments
      * Prepare args for closure
      *
      * @param callable $fn
@@ -165,7 +170,9 @@ class Parameter implements \JsonSerializable
     }
 
     /**
+     * @function setMessage
      * Set error message
+     *
      * @param $e
      */
     public function setMessage($message, $opt):\Application\Parameter
@@ -175,7 +182,8 @@ class Parameter implements \JsonSerializable
     }
 
     /**
-     *
+     * @function count
+     * 
      * @return int|null
      */
     public function count(): ?int

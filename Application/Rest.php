@@ -53,6 +53,7 @@ class Rest
     }
 
     /**
+     * @function initParams
      * Params init
      *
      * @param array $params
@@ -75,6 +76,7 @@ class Rest
     }
 
     /**
+     * @function getParams
      * Получаем массив Поле-Значение REST action
      *
      * @param array $params
@@ -111,7 +113,7 @@ class Rest
     }
 
     /**
-     * dispatcher
+     * @function dispatcher
      * Диспетчер REST запросов [GET| PUT| POST| DELETE]
      *
      * @param array $opt
@@ -130,11 +132,11 @@ class Rest
                 $result = call_user_func_array($this->action->bindTo($this), $arg);
             }
         }
-        return $this->response('json', $result);
+        return $this->owner->response('json', $result);
     }
 
     /**
-     * isAllow
+     * @function isAllow
      * Check ACL allow
      *
      * @param string $field
@@ -148,6 +150,8 @@ class Rest
     }
 
     /**
+     * @function filter
+     *
      * @param array $p
      * @param callable|null $cb
      * @return array
@@ -160,6 +164,13 @@ class Rest
         return array_filter($p, $cb,ARRAY_FILTER_USE_BOTH);
     }
 
+    /**
+     * @function paramsBykey
+     *
+     * @param $pattern
+     * @param $a
+     * @return array
+     */
     protected function paramsBykey($pattern, $a)
     {
         $keys = array_values(preg_grep($pattern, array_keys($a)));
@@ -169,6 +180,7 @@ class Rest
     }
 
     /**
+     * @function arguments
      * Prepare args for closure
      *
      * @param callable $fn
@@ -186,7 +198,7 @@ class Rest
                     $item->value = $this->owner->config??[];
                     break;
                 case 'db':
-                    $item->value = isset($this->owner->db) ? $this->owner->db : new \Application\PDA($this->owner, true);
+                    $item->value = isset($this->owner->{$item->name}) ? $this->owner->{$item->name} : new \Application\PDA($this->owner->config[$item->name]);
                     break;
                 case 'error':
                     $item->value = $this->error;
@@ -196,6 +208,7 @@ class Rest
                     break;
                 case 'user':
                     $item->value = $this->user ?? [];
+//                    $item->value = $this->owner->user ?? [];
                     break;
                 default:
                     list($key, $params) = $this->paramsBykey("/^!*$name$/i", $this->opt[$this->method]);
@@ -224,12 +237,12 @@ class Rest
      * @param bool $flag
      * @return array
      */
-    public function __invoke(array $request, array $params, $flag = true ): array
-    {
-        $this->request = $request;
-        $swap = $this->getParams($params, $flag);
-        return $this->initParams($params,$swap );
-    }
+//    public function __invoke(array $request, array $params, $flag = true ): array
+//    {
+//        $this->request = $request;
+//        $swap = $this->getParams($params, $flag);
+//        return $this->initParams($params,$swap );
+//    }
 
     /**
      * PHPRoll Native property
@@ -240,10 +253,45 @@ class Rest
      */
     public function __get ( $name )
     {
-        if (property_exists($this->owner, $name)) {
-            return $this->owner->{$name};
+//        if (property_exists($this->owner, $name)) {
+//            return $this->owner->{$name};
+//        }
+//        throw new \Exception(__CLASS__."->$name property not foudnd!");
+        $value = null;
+
+        switch (strtolower($name)) {
+            case 'header':
+                $value = $this->owner->header??[];
+                break;
+            case 'cfg':
+                $value = $this->owner->config??[];
+                break;
+            case (strpos($name, 'db') === 0 ? true: false):
+                $value = isset($this->owner->{$name}) ? $this->owner->{$name} : new \Application\PDA($this->owner->config[$name]);
+                break;
+            case 'error':
+                $value = $this->error;
+                break;
+            case 'user':
+                $value = $this->user ?? [];
+                break;
+            default:
+                list($key, $params) = $this->paramsBykey("/^!*$name$/i", $this->opt[$this->method]);
+                if (is_null($key)) list($key, $params) = $this->paramsBykey("/^!*$name$/i", $this->opt);
+
+                if (is_null($key)) {
+                    $value = null;
+                } else {
+                    $is_filter = strpos($key, '!') !== false; //TODO: fprefix & sufix
+                    if (is_array($params)) {
+                        $swap = $this->getParams($params, $is_filter);
+                        $value = $this->initParams($params,$swap );
+                    }
+                    else $value = [];
+                }
         }
-        throw new \Exception(__CLASS__."->$name property not foudnd!");
+
+        return $value;
     }
 
     /**
@@ -255,7 +303,10 @@ class Rest
      */
     public function __call($name, $arguments)
     {
-        if (method_exists($this->owner, $name)) return call_user_func_array(array($this->owner, $name), $arguments);
+//        if (method_exists($this->owner, $name)) return call_user_func_array(array($this->owner, $name), $arguments);
+//        throw new \Exception(__CLASS__."->$name(...) method not foudnd");
+
+        if (isset($this->opt[$name]) && is_callable($this->opt[$name])) return call_user_func_array($this->opt[$name]->bindTo($this), $arguments);
         throw new \Exception(__CLASS__."->$name(...) method not foudnd");
     }
 
