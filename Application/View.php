@@ -15,12 +15,12 @@ namespace Application;
 class View extends \Application\PHPRoll
 {
     /**
-     * @function script
+     * @function xtemplate
      *
      * @param array $params
      * @return string
      */
-    public function script(array $params =[]): string 
+    public function xtemplate(array $params =[]): string
     {
         if (!isset($params['id']) && !isset($params['name'])) throw new \Exception('Application\View::script() - необходимо определить id или name!');
         $id = $params['id'] ?? $params['name'];
@@ -56,15 +56,32 @@ EOT;
     {
         $permit = boolval($permit);
 
-        if (is_array($script)) {
-            $idx = (count($script) == 2) && !$permit ? 1 : ($permit ? 0 : null);
-            if (!is_null($idx)) return $this->context($script[$idx], ['self' => &$this]);
-        } elseif (is_string($script)) {
-            return $permit || !$permit && $deny ? $this->context($script, ['self' => &$this, 'script' => $script, 'is_allow' => $permit]) : null;
+        try {
+            if (is_array($script)) {
+                $idx = (count($script) == 2) && !$permit ? 1 : ($permit ? 0 : null);
+                if (!is_null($idx)) return $this->context($script[$idx], ['self' => &$this]);
+            } elseif (is_string($script)) {
+                return $permit || !$permit && $deny ? $this->context($script, ['self' => &$this, 'script' => $script, 'is_allow' => $permit]) : null;
+            }
+        } catch (\Application\ContextException $e) {
+            return $this->context($this->config['404'], ['self' => &$this, 'script' => $script, 'is_allow' => $permit]);
         }
 
         if (count($script) == 2) trigger_error("Application\View::partial($script) пустой идентификатор скрипта", E_USER_WARNING);
         return null;
+    }
+
+    /**
+     * @function jscode
+     *
+     * @param $script
+     * @param bool $permit
+     * @param bool $deny
+     * @return null|string
+     */
+    public function jscode($script, $permit = true, $deny = true): ?string
+    {
+        return $this->partial($script, $permit, $deny);
     }
 
     /**
@@ -76,10 +93,7 @@ EOT;
      */
     public function getPattern(array $opt)
     {
-        if (isset($this->header['Xhr-Version'])) {
-            $opt['script'] = null;
-        }
-
+        if (isset($this->header['Xhr-Version'])) { $opt['script'] = null; }
         return parent::tpl($this->path, $opt);
     }
 

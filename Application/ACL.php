@@ -38,10 +38,15 @@ class ACL
                     if (!array_diff($params, array_keys($app->header))) $params = array_intersect_key($app->header, array_flip($fields[1]));
                     else $params = array_intersect_key($app->params, array_flip($fields[1]));
                 }
-                $db = isset($app->db) ? $app->db : new \Application\PDA($app->config['db']);
-                //echo '<textarea>'; var_dump($params); echo '</testarea>';exit;
-                $this->user = count($params) ? $db->stmt($app->config['user'], $params)->fetch() : null;
-                if ($attach) {
+                try {
+                    $db = isset($app->db) ? $app->db : new \Application\PDA($app->config['db']);
+                    //echo '<textarea>'; var_dump($params); echo '</testarea>';exit;
+                    $this->user = count($params) ? $db->stmt($app->config['user'], $params)->fetch() : null;
+                } catch (\Exception $e) {
+                    $app->response_header['Action-Status'] = 'ACL::DB ERROR';
+                    $this->user = null;
+                }
+                if ($db && $attach) {
                     $app->db = $db; $app->acl = $this;
                 }
             }

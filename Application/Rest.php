@@ -14,7 +14,6 @@ namespace Application;
 
 class Rest
 {
-    protected $owner = null;
     protected $acl = [];
     protected $method = 'GET';
     protected $action = null;
@@ -23,6 +22,7 @@ class Rest
     protected $opt = [];
     protected $is_filter = false;
 
+    public $owner = null;
     // Авторизованный пользватель, выполняющий Rest action
     public $user = null;
     // Контейнер сообщений об ошибках
@@ -260,6 +260,9 @@ class Rest
         $value = null;
 
         switch (strtolower($name)) {
+//            case 'owner':
+//                $item->value = $this->owner;
+//                break;
             case 'header':
                 $value = $this->owner->header??[];
                 break;
