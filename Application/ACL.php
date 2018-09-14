@@ -44,6 +44,7 @@ class ACL
                     $this->user = count($params) ? $db->stmt($app->config['user'], $params)->fetch() : null;
                 } catch (\Exception $e) {
                     $app->response_header['Action-Status'] = 'ACL::DB ERROR';
+                    trigger_error("Application\ACL ERROR: " + $e->getMessage() , E_USER_WARNING);
                     $this->user = null;
                 }
                 if ($db && $attach) {
@@ -75,7 +76,7 @@ class ACL
      */
     public function __get(string $field)
     {
-        return count($this->user) && isset($this->user[$field]) ? \Application\PDA::parameterize($this->user[$field]) : null;
+        return count($this->user) && isset($this->user[$field]) ? \Application\Parameter::ize($this->user[$field]) : null;
     }
 
     /**
@@ -84,7 +85,7 @@ class ACL
      */
     public function __invoke(string $field)
     {
-        return count($this->user) && isset($this->user[$field]) ? \Application\PDA::parameterize($this->user[$field]) : null;
+        return count($this->user) && isset($this->user[$field]) ? \Application\Parameter::ize($this->user[$field]) : null;
     }
 
     /**
