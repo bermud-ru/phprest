@@ -36,7 +36,10 @@ class View extends \Application\PHPRoll
         $content =<<<EOT
 <script id="$id" type="text/x-template" $charset $arguments $vars $before $after>
 EOT;
-        if ($params['src']) $content .= $this->context($params['src'], array_merge($opt,['script'=>null,'ext'=>'']));
+        if ($params['src']) {
+            $opt =  $opt + ['script'=>null,'ext'=>''];
+            $content .= $this->context($params['src'], $opt);
+        }
         else if ($params['code'] || $params['body']) $content .= $params['code'] ?? $params['body'];
         else trigger_error("Application\View::script([name='$id']) пустой скрипт", E_USER_WARNING);
         $content .= "</script>";
@@ -55,16 +58,20 @@ EOT;
     public function partial($script, $permit = true, $deny = true): ?string
     {
         $permit = boolval($permit);
+        $option = ['self' => &$this, 'script' => $script, 'is_allow' => $permit];
 
         try {
             if (is_array($script)) {
                 $idx = (count($script) == 2) && !$permit ? 1 : ($permit ? 0 : null);
-                if (!is_null($idx)) return $this->context($script[$idx], ['self' => &$this]);
+                if (!is_null($idx)) {
+                    $option = ['self' => &$this];
+                    return $this->context($script[$idx], $option);
+                }
             } elseif (is_string($script)) {
-                return $permit || !$permit && $deny ? $this->context($script, ['self' => &$this, 'script' => $script, 'is_allow' => $permit]) : null;
+                return $permit || !$permit && $deny ? $this->context($script, $option) : null;
             }
         } catch (\Application\ContextException $e) {
-            return $this->context($this->config['404'], ['self' => &$this, 'script' => $script, 'is_allow' => $permit]);
+            return $this->context($this->config['404'], $option);
         }
 
         if (count($script) == 2) trigger_error("Application\View::partial($script) пустой идентификатор скрипта", E_USER_WARNING);
