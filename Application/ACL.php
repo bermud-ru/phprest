@@ -41,11 +41,11 @@ class ACL
                 try {
                     $db = isset($app->db) ? $app->db : new \Application\PDA($app->config['db']);
                     //echo '<textarea>'; var_dump($params); echo '</testarea>';exit;
-                    $this->user = count($params) ? $db->stmt($app->config['user'], $params)->fetch() : null;
+                    if ($db) $this->user = count($params) ? $db->stmt($app->config['user'], $params)->fetch() : null;
                 } catch (\Exception $e) {
-                    $app->response_header['Action-Status'] = 'ACL::DB ERROR';
-                    trigger_error("Application\ACL ERROR: " + $e->getMessage() , E_USER_WARNING);
-                    $this->user = null;
+//                    $app->response_header['Action-Status'] = 'ERROR ACL '.addslashes ($e->getMessage());
+//                    trigger_error("Application\ACL: " . addslashes ($e->getMessage()) , E_USER_WARNING);
+                    $this->user = null; $db = null;
                 }
                 if ($db && $attach) {
                     $app->db = $db; $app->acl = $this;

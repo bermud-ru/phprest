@@ -198,7 +198,12 @@ class Rest
                     $item->value = $this->owner->config??[];
                     break;
                 case 'db':
-                    $item->value = isset($this->owner->{$item->name}) ? $this->owner->{$item->name} : new \Application\PDA($this->owner->config[$item->name]);
+                    try {
+                        $item->value = isset($this->owner->{$item->name}) ? $this->owner->{$item->name} : new \Application\PDA($this->owner->config[$item->name]);
+                    } catch (\Exception $e) {
+                        $this->error['ACL'] = addslashes($e->getMessage());
+                        $item->value = null;
+                    }
                     break;
                 case 'error':
                     $item->value = $this->error;
@@ -213,7 +218,6 @@ class Rest
                 default:
                     list($key, $params) = $this->paramsBykey("/^!*$name$/i", $this->opt[$this->method]);
                     if (is_null($key)) list($key, $params) = $this->paramsBykey("/^!*$name$/i", $this->opt);
-//TODO: difernt values in config
                     if (is_null($key)) {
                         $item->value = null;
                     } else {
