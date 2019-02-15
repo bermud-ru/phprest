@@ -132,7 +132,13 @@ class Rest
                 $result = call_user_func_array($this->action->bindTo($this), $arg);
             }
         }
-        return $this->owner->response('json', $result);
+
+        $type = 'json';
+        if (isset($result['Content-Type'])) {
+            $type = strtolower($result['Content-Type']);
+            unset($result['Content-Type']);
+        }
+        return $this->owner->response($type, $result);
     }
 
     /**
