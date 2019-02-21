@@ -98,28 +98,28 @@ class Rest
                         }, ARRAY_FILTER_USE_BOTH)), 0, 1);
 //                        if (count($s)) $v['name'] = key($s); else $v['name'] = key($p);
                         foreach ($s as $k1 => $v1) if (!isset($result[$k1])) {
-                            $opt =  ['name'=>$k1];
+                            $opt = ['name'=>$k1];
                             if (isset($v['alias'])) {
                                 $opt['alias'] = preg_replace('/\(.*\)/U', $k1, $v['alias']);
-                                $result[ $opt['alias']] = $v1;
+                                $result[$opt['alias']] = $v1;
                             } else {
-                                $result[ $k1] = $v1;
+                                $result[$k1] = $v1;
                             }
                             $params[] = array_merge($v, $opt);
                         }
                     } else {
                         foreach ($fields as $k1 => $v1) {
-                            $value = isset($this->request[$v1]) ? $this->request[$v1] : null;
-
+                            $value = isset($this->request[$k1]) ? $this->request[$k1] : null;
                             if ((is_null($value) || $value == '') && isset($v['default'])) {
                                 $value = (is_callable($v['default'])) ? call_user_func_array($v['default']->bindTo($this->owner), $this->arguments($v['default'])) : $v['default'];
                             }
-                            $opt = ['name'=>$v1];
+
+                            $opt = ['name'=>$k1];
                             if (isset($v['alias'])) {
-                                $opt['alias'] = preg_replace('/\(.*\)/U', $v1, $v['alias']);
+                                $opt['alias'] = preg_replace('/\(.*\)/U', $k1, $v['alias']);
                                 $result[$opt['alias']] = $value;
                             } else {
-                                $result[ $v1] = $value;
+                                $result[$k1] = $value;
                             }
                             $params[] = array_merge($v, $opt);
                         }
@@ -134,7 +134,7 @@ class Rest
                     $this->is_filter = $is_filter;
 
                     if (($is_filter && $value !== null && $value !== '') || !$is_filter) {
-                        $result[(isset($v['alias']) ? preg_replace('/\(.*\)/U', $v['name'], $v['alias']) : $v['name'])] = $value;
+                        $result[(isset($v['alias']) ? $v['alias'] : $v['name'])] = $value;
                     }
                 }
             }
