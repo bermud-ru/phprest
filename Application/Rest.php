@@ -90,25 +90,55 @@ class Rest
         if (count($params)) {
             foreach ($params as $k => $v) {
                 if (is_array($v['name'])) {
-                    $p = array_intersect_key($this->request,array_flip($v['name']));
-                    $s = array_slice(($t = array_filter($p, function($v) {return($v !== null && $v !== '');},ARRAY_FILTER_USE_BOTH)),0,1);
-                    if (count($s)) $v['name'] = key($s); else $v['name'] = key($p);
-                }
+                    $fields = array_flip($v['name']);
+                    if ($is_filter) {
+                        $p = array_intersect_key($this->request, $fields);
+                        $s = array_slice(($t = array_filter($p, function ($v) {
+                            return ($v !== null && $v !== '');
+                        }, ARRAY_FILTER_USE_BOTH)), 0, 1);
+//                        if (count($s)) $v['name'] = key($s); else $v['name'] = key($p);
+                        foreach ($s as $k1 => $v1) if (!isset($result[$k1])) {
+                            $opt =  ['name'=>$k1];
+                            if (isset($v['alias'])) {
+                                $opt['alias'] = preg_replace('/\(.*\)/U', $k1, $v['alias']);
+                                $result[ $opt['alias']] = $v1;
+                            } else {
+                                $result[ $k1] = $v1;
+                            }
+                            $params[] = array_merge($v, $opt);
+                        }
+                    } else {
+                        foreach ($fields as $k1 => $v1) {
+                            $value = isset($this->request[$v1]) ? $this->request[$v1] : null;
 
-                $value = isset($this->request[$v['name']]) ? $this->request[$v['name']] : null;
+                            if ((is_null($value) || $value == '') && isset($v['default'])) {
+                                $value = (is_callable($v['default'])) ? call_user_func_array($v['default']->bindTo($this->owner), $this->arguments($v['default'])) : $v['default'];
+                            }
+                            $opt = ['name'=>$v1];
+                            if (isset($v['alias'])) {
+                                $opt['alias'] = preg_replace('/\(.*\)/U', $v1, $v['alias']);
+                                $result[$opt['alias']] = $value;
+                            } else {
+                                $result[ $v1] = $value;
+                            }
+                            $params[] = array_merge($v, $opt);
+                        }
+                    }
+                } else {
+                    $value = isset($this->request[$v['name']]) ? $this->request[$v['name']] : null;
 
-                if ((is_null($value) || $value == '') && isset($v['default'])) {
-                     $value = (is_callable($v['default'])) ? call_user_func_array($v['default']->bindTo($this->owner), $this->arguments($v['default'])) : $v['default'];
-                }
+                    if ((is_null($value) || $value == '') && isset($v['default'])) {
+                        $value = (is_callable($v['default'])) ? call_user_func_array($v['default']->bindTo($this->owner), $this->arguments($v['default'])) : $v['default'];
+                    }
 
-                $this->is_filter = $is_filter;
+                    $this->is_filter = $is_filter;
 
-                if (($is_filter && $value !== null && $value !== '') || !$is_filter) {
-                   $result[(isset($v['alias']) ? $v['alias']:$v['name'])] = $value;
+                    if (($is_filter && $value !== null && $value !== '') || !$is_filter) {
+                        $result[(isset($v['alias']) ? preg_replace('/\(.*\)/U', $v['name'], $v['alias']) : $v['name'])] = $value;
+                    }
                 }
             }
         }
-
         return $result;
     }
 
@@ -299,6 +329,7 @@ class Rest
                     if (is_array($params)) {
                         $swap = $this->getParams($params, $is_filter);
                         $value = $this->initParams($params,$swap );
+                        var_dump(['params'=>$params, 'sourse'=>$swap] );exit;
                     }
                     else $value = [];
                 }
