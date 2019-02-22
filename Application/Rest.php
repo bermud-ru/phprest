@@ -92,12 +92,13 @@ class Rest
                 if (is_array($v['name'])) {
                     $fields = array_flip($v['name']);
                     if ($is_filter) {
-                        $p = array_intersect_key($this->request, $fields);
-                        $s = array_slice(($t = array_filter($p, function ($v) {
-                            return ($v !== null && $v !== '');
-                        }, ARRAY_FILTER_USE_BOTH)), 0, 1);
+                        $fields =array_intersect_key($this->request,array_flip($v['name']));
+//                        $p = array_intersect_key($this->request, $fields);
+//                        $s = array_slice(($t = array_filter($p, function ($v) {
+//                            return ($v !== null && $v !== '');
+//                        }, ARRAY_FILTER_USE_BOTH)), 0, 1);
 //                        if (count($s)) $v['name'] = key($s); else $v['name'] = key($p);
-                        foreach ($s as $k1 => $v1) if (!isset($result[$k1])) {
+                        foreach ($fields as $k1 => $v1) if (!isset($result[$k1])) {
                             $opt = ['name'=>$k1];
                             if (isset($v['alias'])) {
                                 $opt['alias'] = preg_replace('/\(.*\)/U', $k1, $v['alias']);
