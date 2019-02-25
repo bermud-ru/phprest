@@ -60,10 +60,11 @@ class Rest
      * @param $source
      * @return mixed
      */
-    protected function initParams(array $params, &$source)
+    protected function initParams(array $params, array &$source)
     {
+
         foreach ($params as $k => $v) {
-            if ( is_array($v) && (isset($source[$v['name']]) || (isset($v['alias']) && isset($source[$v['alias']])) ) ) {
+            if ( is_array($v) && (array_key_exists($v['name'], $source)) || (isset($v['alias']) && array_key_exists($v['alias'], $source)) ) {
                 $param = (new \Application\Parameter($v,$source))->setOwner($this);
                 if ($this->is_filter && $param->value === null) {
                     unset($source[(isset($v['alias']) ? $v['alias']:$v['name'])]);
@@ -128,7 +129,7 @@ class Rest
                 } else {
                     $value = isset($this->request[$v['name']]) ? $this->request[$v['name']] : null;
 
-                    if ((is_null($value) || $value == '') && isset($v['default'])) {
+                    if ((is_null($value) || $value === '') && isset($v['default'])) {
                         $value = (is_callable($v['default'])) ? call_user_func_array($v['default']->bindTo($this->owner), $this->arguments($v['default'])) : $v['default'];
                     }
 
@@ -234,7 +235,7 @@ class Rest
                 case 'cfg':
                     $item->value = $this->owner->config??[];
                     break;
-                case 'db':
+                case (strpos($name, 'db') === 0 ? true: false):
                     try {
                         $item->value = isset($this->owner->{$item->name}) ? $this->owner->{$item->name} : new \Application\PDA($this->owner->config[$item->name]);
                     } catch (\Exception $e) {
@@ -258,9 +259,8 @@ class Rest
                     if (is_null($key)) {
                         $item->value = null;
                     } else {
-                        $is_filter = strpos($key, '!') !== false; //TODO: fprefix & sufix
                         if (is_array($params)) {
-                            $swap = $this->getParams($params, $is_filter);
+                            $swap = $this->getParams($params, strpos($key, '!') !== false);
                             $item->value = $this->initParams($params,$swap );
                         }
                         else $item->value = [];
@@ -301,9 +301,9 @@ class Rest
         $value = null;
 
         switch (strtolower($name)) {
-//            case 'owner':
-//                $item->value = $this->owner;
-//                break;
+            case 'owner':
+                $value = $this->owner;
+                break;
             case 'header':
                 $value = $this->owner->header??[];
                 break;
@@ -326,9 +326,8 @@ class Rest
                 if (is_null($key)) {
                     $value = null;
                 } else {
-                    $is_filter = strpos($key, '!') !== false; //TODO: fprefix & sufix
                     if (is_array($params)) {
-                        $swap = $this->getParams($params, $is_filter);
+                        $swap = $this->getParams($params, strpos($key, '!') !== false);
                         $value = $this->initParams($params,$swap );
                         var_dump(['params'=>$params, 'sourse'=>$swap] );exit;
                     }
