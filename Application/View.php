@@ -55,20 +55,20 @@ EOT;
      * @param boolean $deny
      * @return string
      */
-    public function partial($script, $permit = true, $deny = true): ?string
+    public function partial($script, array $params = ['permit'=>true, 'deny'=>true]): ?string
     {
-        $permit = boolval($permit);
-        $option = ['self' => &$this, 'script' => $script, 'is_allow' => $permit];
+
+        $option = ['self' => &$this, 'script' => $script, 'is_allow' => $params['permit'], 'opt'=>$params['opt']??[]];
 
         try {
             if (is_array($script)) {
-                $idx = (count($script) == 2) && !$permit ? 1 : ($permit ? 0 : null);
+                $idx = (count($script) == 2) && !$params['permit'] ? 1 : ($params['permit'] ? 0 : null);
                 if (!is_null($idx)) {
-                    $option = ['self' => &$this];
+                    $option = ['self' => &$this, 'opt'=>$params['opt']||[]];
                     return $this->context($script[$idx], $option);
                 }
             } elseif (is_string($script)) {
-                return $permit || !$permit && $deny ? $this->context($script, $option) : null;
+                return $params['permit'] || !$params['permit'] && $params['deny'] ? $this->context($script, $option) : null;
             }
         } catch (\Application\ContextException $e) {
             return $this->context($this->config['404'], $option);
@@ -82,13 +82,12 @@ EOT;
      * @function jscode
      *
      * @param $script
-     * @param bool $permit
-     * @param bool $deny
-     * @return null|string
+     * @param array $params
+     * @return string|null
      */
-    public function jscode($script, $permit = true, $deny = true): ?string
+    public function jscode($script, array $params = ['permit'=>true, 'deny'=>true]): ?string
     {
-        return $this->partial($script, $permit, $deny);
+        return $this->partial($script, $params);
     }
 
     /**
