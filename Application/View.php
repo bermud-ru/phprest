@@ -64,10 +64,12 @@ EOT;
             if (is_array($script)) {
                 $idx = (count($script) == 2) && !$params['permit'] ? 1 : ($params['permit'] ? 0 : null);
                 if (!is_null($idx)) {
-                    $option = ['self' => &$this, 'opt'=>$params['opt']||[]];
+                    $option = ['self' => &$this, 'opt'=>$params['opt']??[]];
+                    if (array_key_exists('grinder',$params)) $option['grinder'] = $params['grinder'];
                     return $this->context($script[$idx], $option);
                 }
             } elseif (is_string($script)) {
+                if (array_key_exists('grinder',$params)) $option['grinder'] = $params['grinder'];
                 return $params['permit'] || !$params['permit'] && $params['deny'] ? $this->context($script, $option) : null;
             }
         } catch (\Application\ContextException $e) {
@@ -87,6 +89,9 @@ EOT;
      */
     public function jscode($script, array $params = ['permit'=>true, 'deny'=>true]): ?string
     {
+        $params['grinder'] = function ($contex) {
+            return  preg_replace('/\/\*([^*]|[\r\n]|(\*+([^*\/]|[\r\n])))*\*+\/|\/\/[^\r\n]*/im','', $contex) ;
+        };
         return $this->partial($script, $params);
     }
 
