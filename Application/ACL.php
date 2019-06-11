@@ -64,7 +64,7 @@ class ACL
      */
     public function group(string $field)
     {
-        if (!count($this->user) && !in_array($field, $this->user)) return null;
+        if ((empty($this->user) || !count($this->user)) && !in_array($field, is_array($this->user)?$this->user : [])) return null;
         return in_array($this->user[$field], $this->acl) ? array_flip($this->acl)[$this->user[$field]] : null;
     }
 
@@ -85,7 +85,7 @@ class ACL
      */
     public function __invoke(string $field)
     {
-        return count($this->user) && isset($this->user[$field]) ? \Application\Parameter::ize($this->user[$field]) : null;
+        return !empty($this->user) && count($this->user) && isset($this->user[$field]) ? \Application\Parameter::ize($this->user[$field]) : null;
     }
 
     /**
