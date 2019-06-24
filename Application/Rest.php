@@ -14,7 +14,6 @@ namespace Application;
 
 class Rest
 {
-    protected $acl = [];
     protected $method = 'GET';
     protected $action = null;
     protected $checkPermission = true;
@@ -23,8 +22,6 @@ class Rest
     protected $is_filter = false;
 
     public $owner = null;
-    // Авторизованный пользватель, выполняющий Rest action
-    public $user = null;
     // Контейнер сообщений об ошибках
     public $error = [];
 
@@ -38,7 +35,6 @@ class Rest
     {
         $this->owner = $owner;
         $this->request = $this->owner->params ?? [];
-        if (isset($owner->acl) && $owner->acl) $this->user = $owner->acl; else $this->user = new \Application\ACL($owner, true);
 
         $this->method = strtolower($_SERVER['REQUEST_METHOD']);
         if (!isset($opt[$this->method]) && !isset($opt[$this->method]['action']) && !is_callable($opt[$this->method]['action'])) {
@@ -47,7 +43,7 @@ class Rest
             $this->checkPermission = isset($opt[$this->method]['permission']) ? boolval($opt[$this->method]['permission']) :
                                    ( isset($opt['permission']) ? boolval($opt['permission']) : true );
             $this->opt = $opt;
-            $this->acl = array_merge($opt['acl'] ?? [], $opt[$this->method]['acl'] ?? []);
+            $this->groups = $opt[$this->method]['groups'] ?? $opt['groups'] ?? [];
             $this->action = $opt[$this->method]['action'];
         }
     }
@@ -62,7 +58,6 @@ class Rest
      */
     protected function initParams(array $params, array &$source)
     {
-
         foreach ($params as $k => $v) {
             if ( is_array($v) && (array_key_exists($v['name'], $source)) || (isset($v['alias']) && array_key_exists($v['alias'], $source)) ) {
                 $param = (new \Application\Parameter($v,$source))->setOwner($this);
@@ -153,7 +148,7 @@ class Rest
      */
     public function dispatcher(array $opt=[])
     {
-        if ($this->checkPermission && !$this->isAllow($opt['field'] ?? '')) {
+        if ($this->checkPermission && !$this->isAllow()) {
             $this->owner->response_header['Action-Status'] = 'Permission denied!';
             $result = ['result'=> 'error', 'message' => 'Отказано в доступе / Permission denied'];
         } else {
@@ -175,16 +170,15 @@ class Rest
 
     /**
      * @function isAllow
-     * Check ACL allow
+     * Check acl allow
      *
      * @param string $field
      * @return bool
      */
-    protected function isAllow(string $field): bool
+    protected function isAllow(): bool
     {
-        if (!count($this->acl)) return true;
-        if (!$this->user || empty($field)) return false;
-        return $this->user->in($field, $this->acl);
+        if (empty($this->groups) || empty($this->owner->acl)) return true;
+        return $this->owner->acl->in($this->groups);
     }
 
     /**
@@ -233,13 +227,13 @@ class Rest
                     $item->value = $this->owner->header??[];
                     break;
                 case 'cfg':
-                    $item->value = $this->owner->config??[];
+                    $item->value = $this->owner->cfg;
                     break;
                 case (strpos($name, 'db') === 0 ? true: false):
                     try {
-                        $item->value = isset($this->owner->{$item->name}) ? $this->owner->{$item->name} : new \Application\PDA($this->owner->config[$item->name]);
+                        $item->value = isset($this->owner->{$item->name}) ? $this->owner->{$item->name} : new \Application\PDA($this->owner->cfg->{$item->name});
                     } catch (\Exception $e) {
-                        $this->error['ACL'] = addslashes($e->getMessage());
+                        $this->error['acl'] = addslashes($e->getMessage());
                         $item->value = null;
                     }
                     break;
@@ -249,9 +243,8 @@ class Rest
                 case 'owner':
                     $item->value = $this->owner;
                     break;
-                case 'user':
-                    $item->value = $this->user ?? [];
-//                    $item->value = $this->owner->user ?? [];
+                case 'acl':
+                    $item->value = $this->owner->acl ?? null;
                     break;
                 default:
                     list($key, $params) = $this->paramsBykey("/^!*$name$/i", $this->opt[$this->method]);
@@ -271,21 +264,6 @@ class Rest
     }
 
     /**
-     * Build params set from custom request array and params rules
-     *
-     * @param array $request
-     * @param array $params
-     * @param bool $flag
-     * @return array
-     */
-//    public function __invoke(array $request, array $params, $flag = true ): array
-//    {
-//        $this->request = $request;
-//        $swap = $this->getParams($params, $flag);
-//        return $this->initParams($params,$swap );
-//    }
-
-    /**
      * PHPRoll Native property
      *
      * @param $name
@@ -294,10 +272,6 @@ class Rest
      */
     public function __get ( $name )
     {
-//        if (property_exists($this->owner, $name)) {
-//            return $this->owner->{$name};
-//        }
-//        throw new \Exception(__CLASS__."->$name property not foudnd!");
         $value = null;
 
         switch (strtolower($name)) {
@@ -308,10 +282,10 @@ class Rest
                 $value = $this->owner->header??[];
                 break;
             case 'cfg':
-                $value = $this->owner->config??[];
+                $value = $this->owner->cfg;
                 break;
             case (strpos($name, 'db') === 0 ? true: false):
-                $value = isset($this->owner->{$name}) ? $this->owner->{$name} : new \Application\PDA($this->owner->config[$name]);
+                $value = isset($this->owner->{$name}) ? $this->owner->{$name} : new \Application\PDA($this->owner->cfg->{$name});
                 break;
             case 'error':
                 $value = $this->error;
@@ -347,9 +321,6 @@ class Rest
      */
     public function __call($name, $arguments)
     {
-//        if (method_exists($this->owner, $name)) return call_user_func_array(array($this->owner, $name), $arguments);
-//        throw new \Exception(__CLASS__."->$name(...) method not foudnd");
-
         if (isset($this->opt[$name]) && is_callable($this->opt[$name])) return call_user_func_array($this->opt[$name]->bindTo($this), $arguments);
         throw new \Exception(__CLASS__."->$name(...) method not foudnd");
     }

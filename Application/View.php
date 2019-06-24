@@ -57,7 +57,6 @@ EOT;
      */
     public function partial($script, array $params = ['permit'=>true, 'deny'=>true]): ?string
     {
-
         $option = ['self' => &$this, 'script' => $script, 'is_allow' => $params['permit'], 'opt'=>$params['opt']??[]];
 
         try {

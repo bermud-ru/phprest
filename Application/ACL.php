@@ -16,8 +16,15 @@ namespace Application;
 
 class ACL
 {
-    public $user = [];
-    protected $acl = [];
+    protected $opt = [];
+    protected $user_id = null;
+    protected $group_idx = [];
+    protected $groups = [];
+    protected $user_object = [];
+
+    const default = ['user_id'=>'user_id','gorop_idx'=>'group_idx','params'=>[]];
+    const user_param = ['name'=>'user_id', 'type'=>'int', 'default'=> null];
+    const group_param = ['name'=>'group_idx', 'type'=>'int', 'default'=> null];
 
     /**
      * ACL constructor.
@@ -26,84 +33,84 @@ class ACL
      * @param bool $attach
      * @param array $opt
      */
-    public function __construct(\Application\PHPRoll &$app, $attach = false, array $opt=[])
+    public function __construct(\Application\PHPRoll &$app, $user_object, array $opt=\Application\ACL::default)
     {
-        if (count($opt)) {
-            $this->user = $opt;
-        } else {
-            if (isset($app->config['user']) && is_string($app->config['user'])) {
-                $params = [];
-                preg_match_all('/:([a-zA-Z0-9\._]+)/', $app->config['user'], $fields);
-                if ( isset($fields[1]) ) {
-                    if (!array_diff($params, array_keys($app->header))) $params = array_intersect_key($app->header, array_flip($fields[1]));
-                    else $params = array_intersect_key($app->params, array_flip($fields[1]));
-                }
-                try {
-                    $db = isset($app->db) ? $app->db : new \Application\PDA($app->config['db']);
-                    //echo '<textarea>'; var_dump($params); echo '</testarea>';exit;
-                    if ($db) $this->user = count($params) ? $db->stmt($app->config['user'], $params)->fetch() : null;
-                } catch (\Exception $e) {
-//                    $app->response_header['Action-Status'] = 'ERROR ACL '.addslashes ($e->getMessage());
-//                    trigger_error("Application\ACL: " . addslashes ($e->getMessage()) , E_USER_WARNING);
-                    $this->user = null; $db = null;
-                }
-                if ($db && $attach) {
-                    $app->db = $db; $app->acl = $this;
-                }
+        if (is_array($user_object)) {
+            $user_param = \Application\ACL::user_param + (isset($opt['user_id']) ? ['alias'=>$opt['user_id']] : []);
+            $this->user_id = new \Application\Parameter($user_param, $user_object);
+            $group_param = \Application\ACL::group_param + (isset($opt['group_idx']) ? ['alias'=>$opt['group_idx']] : []);
+            $this->group_idx = new \Application\Parameter($group_param, $user_object);
+        }
+        $this->groups = isset($opt['groups']) ? $opt['groups'] : [];
+        $this->user_object = $user_object;
+        $this->opt = $opt;
+        $app->acl = $this;
+    }
+
+    /**
+     * Get user ID
+     *
+     * @return int|null
+     */
+    public function u(bool $named = true)
+    {
+        return $this->user_id ? $this->user_id->__toInt() : null;
+    }
+
+    /**
+     * Get group ID or Name
+     *
+     * @param bool $named
+     * @return int|mixed|null
+     */
+    public function g(bool $named = true)
+    {
+        if (empty($this->group_idx)) return null;
+
+        $group_id = $this->group_idx->__toInt();
+
+        if ($named) {
+            $groups = array_flip($this->groups);
+            return isset($groups[$group_id]) ? $groups[$group_id] : null;
+        }
+        return $group_id;
+    }
+
+    /**
+     * Check exist user goup id in
+     * @param array $groups
+     * @return bool
+     */
+    public function in(array $groups)
+    {
+        $group_name = $this->g(); $group_id = $this->g(false);
+        if (is_null($group_id)) return false;
+
+        foreach ($groups as $k=>$v) {
+            if (is_string($v)) {
+                if ($v == $group_name) return true;
+            } else {
+                if (isset($this->groups[$v]) && $this->groups[$v] == $group_id) return true;
             }
         }
-
-        if (isset($app->config['acl'])) $this->acl = $app->config['acl'];
+        return false;
     }
 
     /**
-     * @function group
+     *  Native property
      *
-     * @param string $field
-     * @return string | null
-     */
-    public function group(string $field)
-    {
-        if ((empty($this->user) || !count($this->user)) && !in_array($field, is_array($this->user)?$this->user : [])) return null;
-        return in_array($this->user[$field], $this->acl) ? array_flip($this->acl)[$this->user[$field]] : null;
-    }
-
-    /**
-     * Access to User property as ACL object property
-     *
-     * @param string $field
-     * @return mixed|null
-     */
-    public function __get(string $field)
-    {
-        return count($this->user) && isset($this->user[$field]) ? \Application\Parameter::ize($this->user[$field]) : null;
-    }
-
-    /**
-     * @param string $field
-     * @return mixed|null
-     */
-    public function __invoke(string $field)
-    {
-        return !empty($this->user) && count($this->user) && isset($this->user[$field]) ? \Application\Parameter::ize($this->user[$field]) : null;
-    }
-
-    /**
-     * @function in
-     *
-     * @param string $field
-     * @param array $roles
+     * @param $name
      * @return mixed
+     * @throws \Exception
      */
-    public function in(string $field, array $names):bool 
+    public function __get ($name)
     {
-        if ($this->user === false) return false;
-        if (!count($this->user) && !in_array($field, $this->user ?? [])) return false;
-        if (\Application\PHPRoll::is_assoc($names)) {
-            return in_array($this->user[$field], array_values($names));
+        if (isset($this->user_object[$name])) {
+            return \Application\Parameter::ize($this->user_object[$name]);
         }
-        return in_array($this->user[$field], array_values(array_intersect_key($this->acl, array_flip($names))));
+        return null;
     }
+
 }
 
 ?>
