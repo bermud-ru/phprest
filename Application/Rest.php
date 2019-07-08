@@ -19,10 +19,11 @@ class Rest
     protected $checkPermission = true;
     protected $request = [];
     protected $opt = [];
+    protected $groups =[];
     protected $is_filter = false;
 
     public $owner = null;
-    // Контейнер сообщений об ошибках
+    // Контейнер сообщений об ошибках4321q
     public $error = [];
 
     /**
@@ -177,8 +178,9 @@ class Rest
      */
     protected function isAllow(): bool
     {
-        if (empty($this->groups) || empty($this->owner->acl)) return true;
-        return $this->owner->acl->in($this->groups);
+        if (isset($this->owner->acl) && count($this->groups)) return $this->owner->acl->in($this->groups);
+        return !boolval(count($this->groups));
+
     }
 
     /**
