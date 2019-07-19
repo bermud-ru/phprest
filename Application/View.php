@@ -14,6 +14,8 @@ namespace Application;
 
 class View extends \Application\PHPRoll
 {
+    private $is_jscript = false;
+
     /**
      * @function xtemplate
      *
@@ -72,7 +74,11 @@ EOT;
                 return $params['permit'] || !$params['permit'] && $params['deny'] ? $this->context($script, $option) : null;
             }
         } catch (\Application\ContextException $e) {
-            return $this->context($this->config['404'], $option);
+            if ($this->is_jscript) {
+                echo 'console.error(\'PHP Exception: \'+decodeURIComponent(\''.urlencode($e->getMessage()).'\'));';
+            } else {
+                return $this->context($this->cfg->param('404'), $option);
+            }
         }
 
         if (count($script) == 2) trigger_error("Application\View::partial($script) пустой идентификатор скрипта", E_USER_WARNING);
@@ -88,6 +94,8 @@ EOT;
      */
     public function jscode($script, array $params = ['permit'=>true, 'deny'=>true]): ?string
     {
+        $this->is_jscript = true;
+
         $params['grinder'] = function ($contex) {
             return  preg_replace('/\/\*([^*]|[\r\n]|(\*+([^*\/]|[\r\n])))*\*+\/|\/\/[^\r\n]*/im','', $contex) ;
         };
