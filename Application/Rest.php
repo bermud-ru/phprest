@@ -42,10 +42,10 @@ class Rest
             $this->error = ['code' => '404','message'=>"//$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI] action[$this->method] not supported"];
         } else {
             $this->checkPermission = isset($opt[$this->method]['permission']) ? boolval($opt[$this->method]['permission']) :
-                                   ( isset($opt['permission']) ? boolval($opt['permission']) : true );
-            $this->opt = $opt;
+                ( isset($opt['permission']) ? boolval($opt['permission']) : true );
             $this->groups = $opt[$this->method]['groups'] ?? $opt['groups'] ?? [];
             $this->action = $opt[$this->method]['action'];
+            $this->opt = new \Application\Jsonb($opt, ['owner'=>$owner]);
         }
     }
 
@@ -150,7 +150,7 @@ class Rest
     public function dispatcher(array $opt=[])
     {
         if ($this->checkPermission && !$this->isAllow()) {
-            $this->owner->response_header['Action-Status'] = 'Permission denied!';
+            $this->owner->response_header['Action-Status'] = '{"result":"error","message":"Отказано в доступе / Permission denied!"}';
             $result = ['result'=> 'error', 'message' => 'Отказано в доступе / Permission denied'];
         } else {
             $arg = $this->arguments($this->action);
@@ -180,7 +180,6 @@ class Rest
     {
         if (isset($this->owner->acl) && count($this->groups)) return $this->owner->acl->in($this->groups);
         return !boolval(count($this->groups));
-
     }
 
     /**
@@ -199,18 +198,19 @@ class Rest
     }
 
     /**
-     * @function paramsBykey
+     * @function paramsByKey
      *
      * @param $pattern
      * @param $a
      * @return array
      */
-    protected function paramsBykey($pattern, $a)
+    protected function paramsByKey($pattern, $a)
     {
-        $keys = array_values(preg_grep($pattern, array_keys($a)));
-
-        if (count($keys)) return [$keys[0],$a[$keys[0]]];
-        return [null,null];
+        if ( is_array($a) && \Application\PHPRoll::is_assoc($a) ) {
+            $keys = array_values(preg_grep($pattern, array_keys($a)));
+            if (count($keys)) return [$keys[0], $a[$keys[0]]];
+        }
+        return [null, null];
     }
 
     /**
@@ -222,47 +222,7 @@ class Rest
      */
     protected function arguments(callable &$fn): array
     {
-        return array_map(function (&$item) {
-            $name  = strtolower($item->name);
-            switch ($name){
-                case 'header':
-                    $item->value = $this->owner->header??[];
-                    break;
-                case 'cfg':
-                    $item->value = $this->owner->cfg;
-                    break;
-                case (strpos($name, 'db') === 0 ? true: false):
-                    try {
-                        $item->value = isset($this->owner->{$item->name}) ? $this->owner->{$item->name} : new \Application\PDA($this->owner->cfg->{$item->name});
-                    } catch (\Exception $e) {
-                        $this->error['acl'] = addslashes($e->getMessage());
-                        $item->value = null;
-                    }
-                    break;
-                case 'error':
-                    $item->value = $this->error;
-                    break;
-                case 'owner':
-                    $item->value = $this->owner;
-                    break;
-                case 'acl':
-                    $item->value = $this->owner->acl ?? null;
-                    break;
-                default:
-                    list($key, $params) = $this->paramsBykey("/^!*$name$/i", $this->opt[$this->method]);
-                    if (is_null($key)) list($key, $params) = $this->paramsBykey("/^!*$name$/i", $this->opt);
-                    if (is_null($key)) {
-                        $item->value = null;
-                    } else {
-                        if (is_array($params)) {
-                            $swap = $this->getParams($params, strpos($key, '!') !== false);
-                            $item->value = $this->initParams($params,$swap );
-                        }
-                        else $item->value = [];
-                    }
-            }
-            return $item->value;
-        }, (new \ReflectionFunction($fn))->getParameters());
+        return array_map(function (&$item) { return $item->value = $this->{$item->name}; }, (new \ReflectionFunction($fn))->getParameters());
     }
 
     /**
@@ -281,33 +241,34 @@ class Rest
                 $value = $this->owner;
                 break;
             case 'header':
-                $value = $this->owner->header??[];
+                $value = $this->owner->header;
                 break;
             case 'cfg':
                 $value = $this->owner->cfg;
                 break;
             case (strpos($name, 'db') === 0 ? true: false):
-                $value = isset($this->owner->{$name}) ? $this->owner->{$name} : new \Application\PDA($this->owner->cfg->{$name});
+                try {
+                    $value = isset($this->owner->{$name}) ? $this->owner->{$name} : new \Application\PDA($this->owner->cfg->{$name});
+                } catch (\Exception $e) {
+                    $this->error[$name] = addslashes($e->getMessage());
+                    $value = null;
+                }
                 break;
             case 'error':
                 $value = $this->error;
                 break;
-            case 'user':
-                $value = $this->user ?? [];
+            case 'acl':
+                $value = $this->owner->acl ?? null;
                 break;
             default:
-                list($key, $params) = $this->paramsBykey("/^!*$name$/i", $this->opt[$this->method]);
-                if (is_null($key)) list($key, $params) = $this->paramsBykey("/^!*$name$/i", $this->opt);
+                list($key, $params) = $this->paramsByKey("/^!*$name$/i", $this->opt->{$this->method} ?? []);
+                if (is_null($key)) list($key, $params) = $this->paramsByKey("/^!*$name$/i", $this->opt->get() ?? []);
 
-                if (is_null($key)) {
-                    $value = null;
-                } else {
-                    if (is_array($params)) {
-                        $swap = $this->getParams($params, strpos($key, '!') !== false);
-                        $value = $this->initParams($params,$swap );
-                        var_dump(['params'=>$params, 'sourse'=>$swap] );exit;
-                    }
-                    else $value = [];
+                if (is_array($params)) {
+                    $swap = $this->getParams($params, strpos($key, '!') !== false);
+                    $value = $this->initParams($params,$swap );
+                }  else  {
+                    $value = $this->opt->get($name);
                 }
         }
 
@@ -323,8 +284,7 @@ class Rest
      */
     public function __call($name, $arguments)
     {
-        if (isset($this->opt[$name]) && is_callable($this->opt[$name])) return call_user_func_array($this->opt[$name]->bindTo($this), $arguments);
-        throw new \Exception(__CLASS__."->$name(...) method not foudnd");
+        return $this->opt->call($name, $arguments);
     }
 
     /**
