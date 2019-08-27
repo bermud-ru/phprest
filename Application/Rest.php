@@ -139,6 +139,31 @@ class Rest
         }
         return $result;
     }
+    
+    private function makeResult(array $opt=[])
+    {
+        $result = ['result'=> 'error', 'message' => 'Run-Time error!'];
+
+        if ($this->checkPermission && !$this->isAllow()) {
+            $this->owner->response_header['Action-Status'] = '{"result":"error","message":"Отказано в доступе / Permission denied!"}';
+            $result = ['result'=> 'error', 'message' => 'Отказано в доступе / Permission denied'];
+        } else {
+            $arg = $this->arguments($opt['action'] );
+            if (count($this->error)) {
+                $result = ['result'=> 'error', 'message' => $this->error];
+            } else {
+                $result = call_user_func_array($this->action->bindTo($this), $arg);
+            }
+        }
+
+        return $result;
+    }
+
+    public function getResult(array $opt=[])
+    {
+        $result = $this->makeResult(['action'=>$this->action]+$opt);
+        return new \Application\Jsonb($result, ['owner'=>$this, 'mode'=>\Application\Jsonb::JSON_ALWAYS]);
+    }
 
     /**
      * @function dispatcher
@@ -149,17 +174,7 @@ class Rest
      */
     public function dispatcher(array $opt=[])
     {
-        if ($this->checkPermission && !$this->isAllow()) {
-            $this->owner->response_header['Action-Status'] = '{"result":"error","message":"Отказано в доступе / Permission denied!"}';
-            $result = ['result'=> 'error', 'message' => 'Отказано в доступе / Permission denied'];
-        } else {
-            $arg = $this->arguments($this->action);
-            if (count($this->error)) {
-                $result = ['result'=> 'error', 'message' => $this->error];
-            } else {
-                $result = call_user_func_array($this->action->bindTo($this), $arg);
-            }
-        }
+       $result = $this->makeResult(['action'=>$this->action]+$opt);
 
         $type = 'json';
         if (isset($result['Content-Type'])) {
