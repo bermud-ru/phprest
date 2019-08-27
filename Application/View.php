@@ -81,7 +81,7 @@ EOT;
             }
         }
 
-        if (count($script) == 2) trigger_error("Application\View::partial($script) пустой идентификатор скрипта", E_USER_WARNING);
+        if (is_countable($script) && count($script) == 2) trigger_error("Application\View::partial($script) пустой идентификатор скрипта", E_USER_WARNING);
         return null;
     }
 
