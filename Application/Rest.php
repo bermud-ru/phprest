@@ -89,8 +89,8 @@ class Rest
                 if (is_array($v['name'])) {
                     $fields = array_flip($v['name']);
                     if ($is_filter) {
-                        $fields =array_intersect_key($this->request,array_flip($v['name']));
-//                        $p = array_intersect_key($this->request, $fields);
+                        $fields =array_intersect_key($this->request->get(),array_flip($v['name']));
+//                        $p = array_intersect_key($this->request->get(), $fields);
 //                        $s = array_slice(($t = array_filter($p, function ($v) {
 //                            return ($v !== null && $v !== '');
 //                        }, ARRAY_FILTER_USE_BOTH)), 0, 1);
@@ -107,7 +107,7 @@ class Rest
                         }
                     } else {
                         foreach ($fields as $k1 => $v1) {
-                            $value = isset($this->request[$k1]) ? $this->request[$k1] : null;
+                            $value = $this->request->get([$k1]);
                             if ((is_null($value) || $value == '') && isset($v['default'])) {
                                 $value = (is_callable($v['default'])) ? call_user_func_array($v['default']->bindTo($this->owner), $this->arguments($v['default'])) : $v['default'];
                             }
@@ -123,7 +123,7 @@ class Rest
                         }
                     }
                 } else {
-                    $value = isset($this->request[$v['name']]) ? $this->request[$v['name']] : null;
+                    $value = $this->request->get($v['name']);
 
                     if ((is_null($value) || $value === '') && isset($v['default'])) {
                         $value = (is_callable($v['default'])) ? call_user_func_array($v['default']->bindTo($this->owner), $this->arguments($v['default'])) : $v['default'];
