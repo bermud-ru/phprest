@@ -38,8 +38,8 @@ class Rest
         $this->request = $this->owner->params ?? [];
 
         $this->method = strtolower($_SERVER['REQUEST_METHOD']);
-        if (!isset($opt[$this->method]) && !isset($opt[$this->method]['action']) && !is_callable($opt[$this->method]['action'])) {
-            $this->error = ['code' => '404','message'=>"//$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI] action[$this->method] not supported"];
+        if (!isset($opt[$this->method]) || !isset($opt[$this->method]['action']) || !is_callable($opt[$this->method]['action'])) {
+            $this->error = ['REST' => "//$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI] action[$this->method] not supported"];
         } else {
             $this->checkPermission = isset($opt[$this->method]['permission']) ? boolval($opt[$this->method]['permission']) :
                 ( isset($opt['permission']) ? boolval($opt['permission']) : true );
@@ -148,11 +148,15 @@ class Rest
             $this->owner->response_header['Action-Status'] = '{"result":"error","message":"Отказано в доступе / Permission denied!"}';
             $result = ['result'=> 'error', 'message' => 'Отказано в доступе / Permission denied'];
         } else {
-            $arg = $this->arguments($opt['action'] );
-            if (count($this->error)) {
+            if (count($this->error))  {
                 $result = ['result'=> 'error', 'message' => $this->error];
             } else {
-                $result = call_user_func_array($this->action->bindTo($this), $arg);
+                $arg = $this->arguments($opt['action']);
+                if (count($this->error)) {
+                    $result = ['result' => 'error', 'message' => $this->error];
+                } else {
+                    $result = call_user_func_array($this->action->bindTo($this), $arg);
+                }
             }
         }
 
