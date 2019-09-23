@@ -75,7 +75,7 @@ EOT;
             }
         } catch (\Application\ContextException $e) {
             if ($this->is_jscript) {
-                echo 'console.error(\'PHP Exception: \'+decodeURIComponent(\''.urlencode($e->getMessage()).'\'));';
+                echo 'console.error(\'PHP Exception: \'+decodeURIComponent(\''.rawurlencode($e->getMessage()).'\'));';
             } else {
                 return $this->context($this->cfg->str('404'), $option);
             }
