@@ -303,7 +303,7 @@ class Rest
      */
     public function __call($name, $arguments)
     {
-        return $this->opt->call($name, $arguments);
+        return call_user_func_array($this->opt->{$name}, $arguments);
     }
 
     /**
