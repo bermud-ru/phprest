@@ -111,6 +111,24 @@ class ACL
         return null;
     }
 
+    /**
+     * serialize rule
+     *
+     * @return array
+     */
+    public function __sleep(): array
+    {
+        return [ 'ACL' => \Application\Parameter::ize($this) ];
+    }
+
+    /**
+     * Prepare for vardump() resutl;
+     * @return array
+     */
+    public function __debugInfo() {
+        return [ 'ACL' => \Application\Parameter::ize($this) ];
+    }
+
 }
 
 ?>
