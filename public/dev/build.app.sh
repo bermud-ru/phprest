@@ -19,3 +19,5 @@ echo "
 cat ./jsroll.app.tmp.js >> ../js/jsroll.app.min.js
 rm ./jsroll.app.tmp.js
 #./../git add .
+# Subresource Integrity
+cat ../js/jsroll.app.min.js| openssl dgst -sha384 -binary | openssl base64 -A > jsroll.app.min.sha384
