@@ -280,10 +280,10 @@ class Rest
                 $value = $this->owner->acl ?? null;
                 break;
             default:
-                list($key, $params) = $this->paramsByKey("/^!*$name$/i", $this->opt->{$this->method} ?? []);
-                if (is_null($key)) list($key, $params) = $this->paramsByKey("/^!*$name$/i", $this->opt->get() ?? []);
+                list($key, $params) = $this->paramsByKey("/^!*$name$/", $this->opt->{$this->method});
+                if (is_null($key)) list($key, $params) = $this->paramsByKey("/^!*$name$/", $this->opt->get());
 
-                if (is_array($params)) {
+                if (is_array($params) && isset($params[0]) && is_array($params[0])) {
                     $swap = $this->getParams($params, strpos($key, '!') !== false);
                     $value = $this->initParams($params,$swap );
                 }  else  {
