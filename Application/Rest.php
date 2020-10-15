@@ -225,7 +225,7 @@ class Rest
      */
     protected function paramsByKey($pattern, $a)
     {
-        if ( is_array($a) && \Application\PHPRoll::is_assoc($a) ) {
+        if ( is_array($a) && \Application\Parameter::is_assoc($a) ) {
             $keys = array_values(preg_grep($pattern, array_keys($a)));
             if (count($keys)) return [$keys[0], $a[$keys[0]]];
         }
