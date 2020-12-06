@@ -97,6 +97,28 @@ class ACL
     }
 
     /**
+     *  Get parameter object by ACL user
+     *
+     * @param array $a
+     * @param string $glue
+     * @param int $opt
+     * @return Parameter
+     */
+    public function wring (array $a, $opt = \Application\PDA::QUERY_ARRAY_SEQUENCE): \Application\Parameter
+    {
+        $s = ['src' => []]; $type = 'array';
+        if (isset($a[$this->g()])) foreach ($a[$this->g()] as $v) {
+            if (is_array($v)) {
+                $s['src'] = array_merge($s['src'], $v);
+            } else {
+                if (is_array($s['src'])) { $s['src'] = '';  $type = 'string'; }
+                $s['src'] .= $v;
+            }
+        }
+        return new \Application\Parameter(['name'=>'src', 'type'=> $type, 'opt'=>$opt], $s);
+    }
+
+    /**
      *  Native property
      *
      * @param $name
