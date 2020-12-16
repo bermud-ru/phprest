@@ -145,6 +145,7 @@ class Rest
         $result = ['result'=> 'error', 'message' => 'Run-Time error!'];
 
         if ($this->checkPermission && !$this->isAllow()) {
+            if (isset($this->owner->db)) $this->owner->db = null;
 //            $this->owner->response_header['Action-Status'] = rawurlencode ( '{"result":"error","message":"Отказано в доступе / Permission denied!"}');
             $result = ['result'=> 'error', 'message' => 'Отказано в доступе / Permission denied'];
         } else {
