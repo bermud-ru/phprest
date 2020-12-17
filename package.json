@@ -12,10 +12,10 @@
 
   "scripts": {
     "post-install-cmd": [
-      "./vendor/bermud-ru/phprest/post-install"
+      "sudo ./vendor/bermud-ru/phprest/post-install"
     ],
     "post-update-cmd": [
-      "./vendor/bermud-ru/phprest/post-update"
+      "sudo ./vendor/bermud-ru/phprest/post-update"
     ]
   }
 }
