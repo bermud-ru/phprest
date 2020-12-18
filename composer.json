@@ -1,6 +1,6 @@
 {
   "name": "bermud-ru/phprest",
-  "version": "0.1.0",
+  "version": "2.1.2",
   "type": "project",
   "description": "RESTfull PHP backend script for RIA (Rich Internet Application) / SPA (Single-page Application) frontend",
   "keywords": [
@@ -64,6 +64,12 @@
     "ext-json": "*",
     "ext-PDO": "*",
     "ext-mbstring": "*"
+  },
+
+  "config": {
+    "optimize-autoloader": true,
+    "preferred-install": "dist",
+    "sort-packages": true
   },
 
   "scripts": {
