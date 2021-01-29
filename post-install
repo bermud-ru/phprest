@@ -17,6 +17,8 @@ export PROJECT=${PWD##*/}
 export DOMAIN=$(jq .install.project ./composer.json)
 ##########################################################################################
 echo "Post-install scripting ..."
+cp -rf ./$vendor/public/* ./public/
+cp -rf ./$vendor/config.php ./
 
 printf "WEB context resotre\n"
 chcon -R -t httpd_sys_content_t $serverRoot

@@ -18,7 +18,7 @@ namespace Application;
 
 (require_once __DIR__.'/../vendor/autoload.php')->add('Application\\', __DIR__ . "/../");
 
-echo (new \Application\PHPRoll(require('../config.php')))->run();
+echo (new \Application\View(require(__DIR__ . '/../config.php')))->run();
 
 exit(1);
 ?>
