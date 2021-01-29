@@ -74,14 +74,14 @@
 
   "scripts": {
     "post-install-cmd": [
-      "mkdir -p public/js",
-      "./vendor/bermud-ru/jsroll/post-install",
-      "./vendor/bermud-ru/phproll/post-install"
+    ],
+    "post-package-install": [
+      "sudo bash ./vendor/bermud-ru/phproll/post-install"
     ],
     "post-update-cmd": [
-      "mkdir -p public/js",
-      "./vendor/bermud-ru/jsroll/post-update",
-      "./vendor/bermud-ru/phproll/post-update"
+    ],
+    "post-package-update": [
+      "sudo bash ./vendor/bermud-ru/phproll/post-update"
     ]
   },
 
