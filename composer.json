@@ -74,14 +74,14 @@
 
   "scripts": {
     "post-install-cmd": [
-    ],
-    "post-package-install": [
       "sudo bash ./vendor/bermud-ru/phproll/post-install"
     ],
+    "post-package-install": [
+    ],
     "post-update-cmd": [
+      "sudo bash ./vendor/bermud-ru/phproll/post-update"
     ],
     "post-package-update": [
-      "sudo bash ./vendor/bermud-ru/phproll/post-update"
     ]
   },
 
