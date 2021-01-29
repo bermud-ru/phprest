@@ -14,7 +14,7 @@ fi
 export vendor=vendor/bermud-ru/phprest
 export serverRoot=$(pwd)
 export PROJECT=${PWD##*/}
-export DOMAIN=$(jq .install.project ./composer.json)
+export DOMAIN=$(jq -r .install.domain ./composer.json)
 ##########################################################################################
 echo "Post-install scripting ..."
 cp -rf ./$vendor/public/* ./public/
