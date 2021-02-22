@@ -18,8 +18,11 @@ export DOMAIN=$(jq .install.project ./composer.json)
 ##########################################################################################
 echo "Post-update scripting ..."
 
+export SELinux=$(sestatus)
+#export NGINX=$(which nginx)
 printf "WEB context resotre\n"
+if [ ! -z "$SELinux" ]; then
 chcon -R -t httpd_sys_content_t $serverRoot
 semanage fcontext -a -t httpd_sys_content_t "${serverRoot}/(/.*)?"
-
+fi
 exit
