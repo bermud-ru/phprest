@@ -139,20 +139,25 @@ class Rest
         }
         return $result;
     }
-    
-    private function makeResult(array $opt=[])
+
+    /**
+     * @function makeResponse
+     *
+     * @return array|false|mixed|string[]
+     */
+    protected function makeResponse()
     {
         $result = ['result'=> 'error', 'message' => 'Run-Time error!'];
 
         if ($this->checkPermission && !$this->isAllow()) {
-            if (isset($this->owner->db)) $this->owner->db = null;
+//            if (isset($this->owner->db)) $this->owner->db = null;
 //            $this->owner->response_header['Action-Status'] = rawurlencode ( '{"result":"error","message":"Отказано в доступе / Permission denied!"}');
             $result = ['result'=> 'error', 'message' => 'Отказано в доступе / Permission denied'];
         } else {
             if (count($this->error))  {
                 $result = ['result'=> 'error', 'message' => $this->error];
             } else {
-                $arg = $this->arguments($opt['action']);
+                $arg = $this->arguments($this->action);
                 if (count($this->error)) {
                     $result = ['result' => 'error', 'message' => $this->error];
                 } else {
@@ -164,10 +169,17 @@ class Rest
         return $result;
     }
 
-    public function getResult(array $opt=[])
+    /**
+     * @function getResult
+     *
+     * @param array $opt
+     * @return Jsonb
+     * @throws \Exception
+     */
+    protected function getResult(array $opt=[])
     {
-        $result = $this->makeResult(['action'=>$this->action]+$opt);
-        return new \Application\Jsonb($result, ['owner'=>$this, 'mode'=>\Application\Jsonb::JSON_ALWAYS]);
+        $result = $this->makeResponse();
+        return new \Application\Jsonb($result, array_merge(['owner'=>$this, 'mode'=>\Application\Jsonb::JSON_ALWAYS], $opt));
     }
 
     /**
@@ -179,12 +191,12 @@ class Rest
      */
     public function dispatcher(array $opt=[])
     {
-       $result = $this->makeResult(['action'=>$this->action]+$opt);
-
-        $type = 'json';
-        if (isset($result['Content-Type'])) {
-            $type = strtolower($result['Content-Type']);
-            unset($result['Content-Type']);
+        $type = isset($opt['type']) ? isset($opt['type']) : 'json';
+        $result = $this->makeResponse();
+        
+        if (isset($result['type'])) {
+            $type = strtolower($result['type']);
+            unset($result['type']);
         }
         return $this->owner->response($type, $result);
     }
