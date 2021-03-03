@@ -16,7 +16,8 @@ namespace Application;
  * @return string
  */
 
-(require_once __DIR__.'/../vendor/autoload.php')->add('Application\\', __DIR__ . "/../");
+$route2loader = '/../';
+(require_once __DIR__ . $route2loader .'vendor/autoload.php')->add('Application\\', __DIR__ . $route2loader);
 
 echo (new \Application\View(require(__DIR__ . '/../config.php')))->run();
 
