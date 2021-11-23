@@ -95,10 +95,10 @@ EOT;
     public function jscode($script, array $params = ['permit'=>true, 'deny'=>true]): ?string
     {
         $this->is_jscript = true;
-
         $params['grinder'] = function ($contex) {
             return  preg_replace('/\/\*([^*]|[\r\n]|(\*+([^*\/]|[\r\n])))*\*+\/|\/\/[^\r\n]*/im','', $contex) ;
         };
+
         return $this->partial($script, $params);
     }
 
@@ -111,8 +111,8 @@ EOT;
      */
     public function getPattern(array $opt)
     {
-        if (isset($this->header['Xhr-Version'])) { $opt['script'] = null; }
-        return parent::tpl($this->path, $opt);
+        if ($this->query_type == '@') { $opt['script'] = null; }
+        return parent::tpl(array_filter(explode("/", substr($this->uri, 1))), $opt);
     }
 
     /**

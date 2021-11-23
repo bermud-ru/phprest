@@ -12,52 +12,27 @@
  */
 namespace Application;
 
-class Rest
+class Rest extends \Application\Request
 {
     protected $method = 'GET';
     protected $action = null;
     protected $checkPermission = true;
-    protected $request = [];
     protected $opt = [];
-    protected $groups =[];
+    protected $groups = [];
     protected $is_filter = false;
 
-    public $owner = null;
-    // Контейнер сообщений об ошибках4321q
+    // Контейнер сообщений об ошибках
     public $error = [];
 
     /**
-     * Rest constructor.
-     *
-     * @param \Application\PHPRoll $owner
-     * @param array $opt
-     */
-    public function __construct(\Application\PHPRoll &$owner, array $opt)
-    {
-        $this->owner = $owner;
-        $this->request = $this->owner->params ?? [];
-
-        $this->method = strtolower($_SERVER['REQUEST_METHOD']);
-        if (!isset($opt[$this->method]) || !isset($opt[$this->method]['action']) || !is_callable($opt[$this->method]['action'])) {
-            $this->error = ['REST' => "//$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI] action[$this->method] not supported"];
-        } else {
-            $this->checkPermission = isset($opt[$this->method]['permission']) ? boolval($opt[$this->method]['permission']) :
-                ( isset($opt['permission']) ? boolval($opt['permission']) : true );
-            $this->groups = $opt[$this->method]['groups'] ?? $opt['groups'] ?? [];
-            $this->action = $opt[$this->method]['action'];
-            $this->opt = new \Application\Jsonb($opt, ['owner'=>$owner]);
-        }
-    }
-
-    /**
-     * @function initParams
+     * @function restParams
      * Params init
      *
      * @param array $params
      * @param $source
      * @return mixed
      */
-    protected function initParams(array $params, array &$source)
+    protected function restParams(array $params, array &$source)
     {
         foreach ($params as $k => $v) {
             if ( is_array($v) && (array_key_exists($v['name'], $source)) || (isset($v['alias']) && array_key_exists($v['alias'], $source)) ) {
@@ -69,7 +44,8 @@ class Rest
                 }
             }
         }
-        return $source;
+
+        return new \Application\Jsonb($source, ['owner'=> $this, 'assoc'=>true, 'mode'=>\Application\Jsonb::JSON_ALWAYS]);
     }
 
     /**
@@ -89,8 +65,8 @@ class Rest
                 if (is_array($v['name'])) {
                     $fields = array_flip($v['name']);
                     if ($is_filter) {
-                        $fields =array_intersect_key($this->request->get(),array_flip($v['name']));
-//                        $p = array_intersect_key($this->request->get(), $fields);
+                        $fields = array_intersect_key($this->params->get(), array_flip($v['name']));
+//                        $p = array_intersect_key($this->params->get(), $fields);
 //                        $s = array_slice(($t = array_filter($p, function ($v) {
 //                            return ($v !== null && $v !== '');
 //                        }, ARRAY_FILTER_USE_BOTH)), 0, 1);
@@ -107,9 +83,9 @@ class Rest
                         }
                     } else {
                         foreach ($fields as $k1 => $v1) {
-                            $value = $this->request->get([$k1]);
+                            $value = $this->params->get([$k1]);
                             if ((is_null($value) || $value == '') && isset($v['default'])) {
-                                $value = (is_callable($v['default'])) ? call_user_func_array($v['default']->bindTo($this->owner), $this->arguments($v['default'])) : $v['default'];
+                                $value = (is_callable($v['default'])) ? call_user_func_array($v['default']->bindTo($this), $this->arguments($v['default'])) : $v['default'];
                             }
 
                             $opt = ['name'=>$k1];
@@ -123,10 +99,10 @@ class Rest
                         }
                     }
                 } else {
-                    $value = $this->request->get($v['name']);
+                    $value = $this->params->get($v['name']);
 
                     if ((is_null($value) || $value === '') && isset($v['default'])) {
-                        $value = (is_callable($v['default'])) ? call_user_func_array($v['default']->bindTo($this->owner), $this->arguments($v['default'])) : $v['default'];
+                        $value = (is_callable($v['default'])) ? call_user_func_array($v['default']->bindTo($this), $this->arguments($v['default'])) : $v['default'];
                     }
 
                     $this->is_filter = $is_filter;
@@ -137,36 +113,24 @@ class Rest
                 }
             }
         }
+
         return $result;
     }
 
     /**
-     * @function makeResponse
+     * @function responseParams
      *
      * @return array|false|mixed|string[]
      */
-    protected function makeResponse()
+    protected function responseParams()
     {
-        $result = ['result'=> 'error', 'message' => 'Run-Time error!'];
+         $arg = $this->arguments($this->action);
 
-        if ($this->checkPermission && !$this->isAllow()) {
-//            if (isset($this->owner->db)) $this->owner->db = null;
-//            $this->owner->response_header['Action-Status'] = rawurlencode ( '{"result":"error","message":"Отказано в доступе / Permission denied!"}');
-            $result = ['result'=> 'error', 'message' => 'Отказано в доступе / Permission denied'];
+        if (count($this->error)) {
+            return ['result' => 'error', 'message' => $this->error];
         } else {
-            if (count($this->error))  {
-                $result = ['result'=> 'error', 'message' => $this->error];
-            } else {
-                $arg = $this->arguments($this->action);
-                if (count($this->error)) {
-                    $result = ['result' => 'error', 'message' => $this->error];
-                } else {
-                    $result = call_user_func_array($this->action->bindTo($this), $arg);
-                }
-            }
+            return call_user_func_array($this->action->bindTo($this), $arg);
         }
-
-        return $result;
     }
 
     /**
@@ -176,10 +140,32 @@ class Rest
      * @return Jsonb
      * @throws \Exception
      */
-    protected function getResult(array $opt=[])
+    public function getResult($opt, string $method = null): array
     {
-        $result = $this->makeResponse();
-        return new \Application\Jsonb($result, array_merge(['owner'=>$this, 'mode'=>\Application\Jsonb::JSON_ALWAYS], $opt));
+        $this->method = strtolower($method ?? $_SERVER['REQUEST_METHOD']);
+        $o = is_array($opt) ? new \Application\Jsonb($opt, ['owner' => $this]) : $opt;
+        $result = ['result'=> 'error', 'message' => 'Methods handler not defined!'];
+
+        if ( $m = $o->get($this->method) ) { // property_exists
+
+            $this->checkPermission = isset($m['permission']) ? boolval($m['permission']) :
+                (isset($o->permission) ? boolval($o->permission) : true);
+            $this->groups = $m['groups'] ?? method_exists($o, 'groups') ? $o->groups : [];
+
+            if ($this->checkPermission && !$this->isAllow()) {
+                $result = ['result' => 'error', 'message' => 'Отказано в доступе / Permission denied'];
+            } else {
+                if (!isset($m['action']) || !is_callable($m['action'])) {
+                    $result = ['result' => 'error', 'message' => "//$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI] action[$this->method] not supported"];
+                } else {
+                    $this->action = $m['action'];
+                    $this->opt = $o;
+                }
+                $result = $this->responseParams();
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -189,16 +175,16 @@ class Rest
      * @param array $opt
      * @return mixed
      */
-    public function dispatcher(array $opt=[])
+    public function run(array $opt=[])
     {
         $type = isset($opt['type']) ? isset($opt['type']) : 'json';
-        $result = $this->makeResponse();
-        
-        if (isset($result['type'])) {
-            $type = strtolower($result['type']);
-            unset($result['type']);
+        $result = ['result'=> 'error', 'message' => 'Methods handler not defined!'];
+        if (isset($opt['route']) && is_callable($opt['route'])) {
+            $result = call_user_func_array($opt['route']->bindTo($this), @is_array($opt['params']) ? $opt['params'] : []);
         }
-        return $this->owner->response($type, $result);
+
+        if (isset($result['type'])) { $type = strtolower($result['type']); unset($result['type']); }
+        return $this->response($type, $result);
     }
 
     /**
@@ -210,7 +196,7 @@ class Rest
      */
     protected function isAllow(): bool
     {
-        if (isset($this->owner->acl) && count($this->groups)) return $this->owner->acl->in($this->groups);
+        if (isset($this->acl) && count($this->groups)) return $this->acl->in($this->groups);
         return !boolval(count($this->groups));
     }
 
@@ -242,6 +228,7 @@ class Rest
             $keys = array_values(preg_grep($pattern, array_keys($a)));
             if (count($keys)) return [$keys[0], $a[$keys[0]]];
         }
+
         return [null, null];
     }
 
@@ -254,7 +241,7 @@ class Rest
      */
     protected function arguments(callable &$fn): array
     {
-        return array_map(function (&$item) { return $item->value = $this->{$item->name}; }, (new \ReflectionFunction($fn))->getParameters());
+        return array_map(function ($item) { return $item->value = $this->{$item->name}; }, (new \ReflectionFunction($fn))->getParameters());
     }
 
     /**
@@ -269,18 +256,18 @@ class Rest
         $value = null;
 
         switch (strtolower($name)) {
-            case 'owner':
-                $value = $this->owner;
-                break;
-            case 'header':
-                $value = $this->owner->header;
-                break;
-            case 'cfg':
-                $value = $this->owner->cfg;
-                break;
+//            case 'owner':
+//                $value = $this;
+//                break;
+//            case 'header':
+//                $value = $this->header;
+//                break;
+//            case 'cfg':
+//                $value = $this->cfg;
+//                break;
             case (strpos($name, 'db') === 0 ? true: false):
                 try {
-                    $value = isset($this->owner->{$name}) ? $this->owner->{$name} : new \Application\PDA($this->owner->cfg->{$name});
+                    $value = isset($this->{$name}) ? $this->{$name} : new \Application\PDA($this->cfg->{$name});
                 } catch (\Exception $e) {
                     $this->error[$name] = addslashes($e->getMessage());
                     $value = null;
@@ -289,16 +276,16 @@ class Rest
             case 'error':
                 $value = $this->error;
                 break;
-            case 'acl':
-                $value = $this->owner->acl ?? null;
-                break;
+//            case 'acl':
+//                $value = $this->acl ?? null;
+//                break;
             default:
                 list($key, $params) = $this->paramsByKey("/^!*$name$/", $this->opt->{$this->method});
                 if (is_null($key)) list($key, $params) = $this->paramsByKey("/^!*$name$/", $this->opt->get());
 
                 if (is_array($params) && isset($params[0]) && is_array($params[0])) {
                     $swap = $this->getParams($params, strpos($key, '!') !== false);
-                    $value = $this->initParams($params,$swap );
+                    $value = $this->restParams($params,$swap );
                 }  else  {
                     $value = $this->opt->get($name);
                 }
@@ -320,16 +307,99 @@ class Rest
     }
 
     /**
-     * PHPRoll Native static method
+     * PHPRoll Native method
      *
-     * @param $name
-     * @param $arguments
+     * @param $method
+     * @return Jsonb|array|string[]
+     * @throws \Exception
+     */
+    public function __invoke(string $method)
+    {
+        return new \Application\Jsonb($this->getResult($this->cfg, $method), ['owner' => $this]);
+    }
+
+    /**
+     * Получаем значение параменных в запросе
+     *
+     */
+    protected function initParams()
+    {
+        if (strpos($_SERVER['CONTENT_TYPE'], 'multipart/form-data') !== FALSE) {
+            $params = $_POST;
+        } else if (strpos($_SERVER['CONTENT_TYPE'], 'json') !== FALSE) {
+            $params = json_decode($this->RAWRequet(), true);
+        } else {
+            mb_parse_str($this->RAWRequet(), $params);
+        }
+        $this->params = new \Application\Jsonb($params, ['owner'=> $this, 'assoc'=>true, 'mode'=>\Application\Jsonb::JSON_ALWAYS]);
+    }
+
+    /**
+     * Генерация заголовка ответа и форматирование кода ответа
+     * @param $type
+     * @param $params
      * @return mixed
      */
-    public static function __callStatic($name, $arguments)
+    public function response(string $type, $params = null)
     {
-        if (method_exists(\Application\PHPRoll, $name)) return call_user_func_array(array(\Application\PHPRoll, $name), $arguments);
-        throw new \Exception(__CLASS__."::$name(...) method not foudnd");
+        $code = $params['code'] ?? 200;
+        if (array_key_exists($code, \Application\PHPRoll::HTTP_RESPONSE_CODE))  {
+            header("HTTP/1.1 {$code} " . \Application\PHPRoll::HTTP_RESPONSE_CODE[$code], false);
+        }
+        http_response_code(intval($code));
+        header('Expires: '. date('r'), false);
+
+        if (isset($_SERVER['HTTP_USER_AGENT']) && strstr($_SERVER['HTTP_USER_AGENT'], 'MSIE') == false) {
+            header('Cache-Control: no-cache', false);
+            header('Pragma: no-cache', false);
+        } else {
+            header('Cache-Control: must-revalidate, post-check=0, pre-check=0', false);
+            header('Pragma: public', false);
+        }
+
+        $context = null;
+        switch ($type)
+        {
+            case 'file':
+                header('Access-Control-Max-Age: 0', false);
+                header('Content-Description: File Transfer');
+                header('Content-Transfer-Encoding: binary',false);
+                header('Connection: Keep-Alive', false);
+                header('Cache-Control: must-revalidate');
+                $this->set_response_header();
+
+                if ( is_resource($params['file']) ) {
+                    fseek($params['file'], 0);
+                    fpassthru($params['file']);
+                    fclose($params['file']);
+                    exit;
+                }
+                break;
+
+            case 'json': default:
+                header('Content-Description: json data container');
+                header('Content-Type: Application/json; charset=utf-8;');
+                header('Access-Control-Max-Age: 0', false);
+                header('Access-Control-Allow-Origin: *', false);
+                //header('Access-Control-Allow-Credentials: true');
+                header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, HEAD, OPTIONS, DELETE', false);
+                header('Access-Control-Allow-Headers: Access-Control-Allow-Headers, Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers, Xhr-Version', false);
+                header('Content-Encoding: utf-8');
+                $this->set_response_header();
+
+                switch (gettype($params)) {
+                    case 'object':
+                    case 'array':
+                        $context = json_encode($params,JSON_BIGINT_AS_STRING | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_NUMERIC_CHECK);
+                        break;
+                    case 'string':
+                    default:
+                        $context = $params;
+                }
+                break;
+        }
+
+        return $context;
     }
 }
 ?>
