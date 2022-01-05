@@ -33,7 +33,7 @@ class ACL
      * @param bool $attach
      * @param array $opt
      */
-    public function __construct(\Application\PHPRoll &$app, $user_object, array $opt=\Application\ACL::default)
+    public function __construct(\Application\Request &$app, $user_object, array $opt=\Application\ACL::default)
     {
         if (is_array($user_object)) {
             $user_param = \Application\ACL::user_param + (isset($opt['user_id']) ? ['alias'=>$opt['user_id']] : []);

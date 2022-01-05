@@ -65,8 +65,8 @@ class Rest extends \Application\Request
                 if (is_array($v['name'])) {
                     $fields = array_flip($v['name']);
                     if ($is_filter) {
-                        $fields = array_intersect_key($this->params->get(), array_flip($v['name']));
-//                        $p = array_intersect_key($this->params->get(), $fields);
+                        $fields = array_intersect_key($this->params, array_flip($v['name']));
+//                        $p = array_intersect_key($this->params, $fields);
 //                        $s = array_slice(($t = array_filter($p, function ($v) {
 //                            return ($v !== null && $v !== '');
 //                        }, ARRAY_FILTER_USE_BOTH)), 0, 1);
@@ -83,8 +83,8 @@ class Rest extends \Application\Request
                         }
                     } else {
                         foreach ($fields as $k1 => $v1) {
-                            $value = $this->params->get([$k1]);
-                            if ((is_null($value) || $value == '') && isset($v['default'])) {
+                            $value = $this->params[$k1];
+                            if ((is_null($value) || $value === '') && isset($v['default'])) {
                                 $value = (is_callable($v['default'])) ? call_user_func_array($v['default']->bindTo($this), $this->arguments($v['default'])) : $v['default'];
                             }
 
@@ -99,7 +99,7 @@ class Rest extends \Application\Request
                         }
                     }
                 } else {
-                    $value = $this->params->get($v['name']);
+                    $value = $this->params[$v['name']];
 
                     if ((is_null($value) || $value === '') && isset($v['default'])) {
                         $value = (is_callable($v['default'])) ? call_user_func_array($v['default']->bindTo($this), $this->arguments($v['default'])) : $v['default'];
@@ -140,7 +140,7 @@ class Rest extends \Application\Request
      * @return Jsonb
      * @throws \Exception
      */
-    public function getResult($opt, string $method = null): array
+    public function getResult($opt, string $method = null)
     {
         $this->method = strtolower($method ?? $_SERVER['REQUEST_METHOD']);
         $o = is_array($opt) ? new \Application\Jsonb($opt, ['owner' => $this]) : $opt;
@@ -241,7 +241,12 @@ class Rest extends \Application\Request
      */
     protected function arguments(callable &$fn): array
     {
-        return array_map(function ($item) { return $item->value = $this->{$item->name}; }, (new \ReflectionFunction($fn))->getParameters());
+        // $this->{$item->name} ::(__get) and $this now  extends \Application\Request wtih own properties su as PARAMS
+        return array_map(function ($item) {
+                return $item->value = $this->{$item->name};
+            },
+            (new \ReflectionFunction($fn))->getParameters()
+        );
     }
 
     /**
@@ -280,7 +285,7 @@ class Rest extends \Application\Request
 //                $value = $this->acl ?? null;
 //                break;
             default:
-                list($key, $params) = $this->paramsByKey("/^!*$name$/", $this->opt->{$this->method});
+                list($key, $params) = $this->paramsByKey("/^!*$name$/", $this->opt->get($this->method));
                 if (is_null($key)) list($key, $params) = $this->paramsByKey("/^!*$name$/", $this->opt->get());
 
                 if (is_array($params) && isset($params[0]) && is_array($params[0])) {
@@ -331,7 +336,8 @@ class Rest extends \Application\Request
         } else {
             mb_parse_str($this->RAWRequet(), $params);
         }
-        $this->params = new \Application\Jsonb($params, ['owner'=> $this, 'assoc'=>true, 'mode'=>\Application\Jsonb::JSON_ALWAYS]);
+//        $this->params = new \Application\Jsonb($params, ['owner'=> $this, 'assoc'=>true, 'mode'=>\Application\Jsonb::JSON_ALWAYS]);
+        $this->params = $params;
     }
 
     /**
