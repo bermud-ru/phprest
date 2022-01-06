@@ -136,8 +136,9 @@ class Rest extends \Application\Request
     /**
      * @function getResult
      *
-     * @param array $opt
-     * @return Jsonb
+     * @param array $optё
+     * @param string|null $method
+     * @return \Application\Jsonb
      * @throws \Exception
      */
     public function getResult($opt, string $method = null)
@@ -261,16 +262,7 @@ class Rest extends \Application\Request
         $value = null;
 
         switch (strtolower($name)) {
-//            case 'owner':
-//                $value = $this;
-//                break;
-//            case 'header':
-//                $value = $this->header;
-//                break;
-//            case 'cfg':
-//                $value = $this->cfg;
-//                break;
-            case (strpos($name, 'db') === 0 ? true: false):
+            case str_starts_with($name, 'db'):
                 try {
                     $value = isset($this->{$name}) ? $this->{$name} : new \Application\PDA($this->cfg->{$name});
                 } catch (\Exception $e) {
@@ -281,9 +273,6 @@ class Rest extends \Application\Request
             case 'error':
                 $value = $this->error;
                 break;
-//            case 'acl':
-//                $value = $this->acl ?? null;
-//                break;
             default:
                 list($key, $params) = $this->paramsByKey("/^!*$name$/", $this->opt->get($this->method));
                 if (is_null($key)) list($key, $params) = $this->paramsByKey("/^!*$name$/", $this->opt->get());
