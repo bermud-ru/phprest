@@ -14,38 +14,39 @@ namespace Application;
 
 class Rest extends \Application\Request
 {
-    protected $method = 'GET';
-    protected $action = null;
-    protected $checkPermission = true;
-    protected $opt = [];
-    protected $groups = [];
-    protected $is_filter = false;
-
     // Контейнер сообщений об ошибках
     public $error = [];
 
     /**
-     * @function restParams
-     * Params init
+     * Конструктор
      *
-     * @param array $params
-     * @param $source
-     * @return mixed
+     * @param array|\Application\Request $config данные из файла конфигурации или class
+     * @param array|null $header внешний заголовок
      */
-    protected function restParams(array $params, array &$source)
+    public function __construct($params, ?array $header = null)
     {
-        foreach ($params as $k => $v) {
-            if ( is_array($v) && (array_key_exists($v['name'], $source)) || (isset($v['alias']) && array_key_exists($v['alias'], $source)) ) {
-                $param = (new \Application\Parameter($v,$source))->setOwner($this);
-                if ($this->is_filter && $param->value === null) {
-                    unset($source[(isset($v['alias']) ? $v['alias']:$v['name'])]);
-                } else {
-                    $source[(isset($v['alias']) ? $v['alias'] : $v['name'])] = $param;
-                }
-            }
+        if (is_array($params)) {
+            parent::__construct($params, $header);
+        } else {
+            foreach (['cfg','uri','header','params','acl'] as $property)
+                if (property_exists($params,$property)) $this->{$property} = $params->{$property};
         }
+    }
 
-        return new \Application\Jsonb($source, ['owner'=> $this, 'assoc'=>true, 'mode'=>\Application\Jsonb::JSON_ALWAYS]);
+    /**
+     * Получаем значение параменных в запросе
+     *
+     */
+    protected function initParams()
+    {
+        if (strpos($_SERVER['CONTENT_TYPE'], 'multipart/form-data') !== FALSE) {
+            $params = $_POST;
+        } else if (strpos($_SERVER['CONTENT_TYPE'], 'json') !== FALSE) {
+            $params = json_decode($this->RAWRequet(), true);
+        } else {
+            mb_parse_str($this->RAWRequet(), $params);
+        }
+        $this->params = $params;
     }
 
     /**
@@ -53,63 +54,36 @@ class Rest extends \Application\Request
      * Получаем массив Поле-Значение REST action
      *
      * @param array $params
-     * @param bool $empty
      * @return array
      */
-    protected function getParams(array &$params, $is_filter = true): array
+    protected function params4rest(array $params): array
     {
         $result = [];
-
         if (count($params)) {
             foreach ($params as $k => $v) {
                 if (is_array($v['name'])) {
                     $fields = array_flip($v['name']);
-                    if ($is_filter) {
-                        $fields = array_intersect_key($this->params, array_flip($v['name']));
-//                        $p = array_intersect_key($this->params, $fields);
-//                        $s = array_slice(($t = array_filter($p, function ($v) {
-//                            return ($v !== null && $v !== '');
-//                        }, ARRAY_FILTER_USE_BOTH)), 0, 1);
-//                        if (count($s)) $v['name'] = key($s); else $v['name'] = key($p);
-                        foreach ($fields as $k1 => $v1) if (!isset($result[$k1])) {
-                            $opt = ['name'=>$k1];
-                            if (isset($v['alias'])) {
-                                $opt['alias'] = preg_replace('/\(.*\)/U', $k1, $v['alias']);
-                                $result[$opt['alias']] = $v1;
-                            } else {
-                                $result[$k1] = $v1;
-                            }
-                            $params[] = array_merge($v, $opt);
+                    foreach ($fields as $k1 => $v1) {
+                        $value = $this->params[$k1];
+                        if ((is_null($value) || $value === '') && isset($v['default'])) {
+                            $value = (is_callable($v['default'])) ? call_user_func_array($v['default']->bindTo($this), $this->arguments($v['default'])) : $v['default'];
                         }
-                    } else {
-                        foreach ($fields as $k1 => $v1) {
-                            $value = $this->params[$k1];
-                            if ((is_null($value) || $value === '') && isset($v['default'])) {
-                                $value = (is_callable($v['default'])) ? call_user_func_array($v['default']->bindTo($this), $this->arguments($v['default'])) : $v['default'];
-                            }
 
-                            $opt = ['name'=>$k1];
-                            if (isset($v['alias'])) {
-                                $opt['alias'] = preg_replace('/\(.*\)/U', $k1, $v['alias']);
-                                $result[$opt['alias']] = $value;
-                            } else {
-                                $result[$k1] = $value;
-                            }
-                            $params[] = array_merge($v, $opt);
+                        $opt = ['name'=>$k1];
+                        if (isset($v['alias'])) {
+                            $opt['alias'] = preg_replace('/\(.*\)/U', $k1, $v['alias']);
+                            $result[$opt['alias']] = $value;
+                        } else {
+                            $result[$k1] = $value;
                         }
+                        $params[] = array_merge($v, $opt);
                     }
-                } else {
+                } elseif (array_key_exists($v['name'], $this->params)) {
                     $value = $this->params[$v['name']];
-
                     if ((is_null($value) || $value === '') && isset($v['default'])) {
                         $value = (is_callable($v['default'])) ? call_user_func_array($v['default']->bindTo($this), $this->arguments($v['default'])) : $v['default'];
                     }
-
-                    $this->is_filter = $is_filter;
-
-                    if (($is_filter && $value !== null && $value !== '') || !$is_filter) {
-                        $result[(isset($v['alias']) ? $v['alias'] : $v['name'])] = $value;
-                    }
+                    $result[(isset($v['alias']) ? $v['alias'] : $v['name'])] = $value;
                 }
             }
         }
@@ -118,54 +92,35 @@ class Rest extends \Application\Request
     }
 
     /**
-     * @function responseParams
+     * @function model
      *
-     * @return array|false|mixed|string[]
+     * @param array $opt
+     * @return mixed
      */
-    protected function responseParams()
+    public function model(array $cfg=[], $extra=[], $REQUEST_METHOD=null)
     {
-         $arg = $this->arguments($this->action);
-
-        if (count($this->error)) {
-            return ['result' => 'error', 'message' => $this->error];
-        } else {
-            return call_user_func_array($this->action->bindTo($this), $arg);
-        }
-    }
-
-    /**
-     * @function getResult
-     *
-     * @param array $optё
-     * @param string|null $method
-     * @return \Application\Jsonb
-     * @throws \Exception
-     */
-    public function getResult($opt, string $method = null)
-    {
-        $this->method = strtolower($method ?? $_SERVER['REQUEST_METHOD']);
-        $o = is_array($opt) ? new \Application\Jsonb($opt, ['owner' => $this]) : $opt;
+        $REQUEST_METHOD = strtolower($REQUEST_METHOD ?? $_SERVER['REQUEST_METHOD']);
+//        $model = new \Application\Jsonb($cfg, ['owner' => $this]);
+        $model = new \Application\Jsonb($cfg, ['owner'=> $this, 'assoc'=>true, 'mode'=>\Application\Jsonb::JSON_ALWAYS]);
         $result = ['result'=> 'error', 'message' => 'Methods handler not defined!'];
 
-        if ( $m = $o->get($this->method) ) { // property_exists
-
-            $this->checkPermission = isset($m['permission']) ? boolval($m['permission']) :
-                (isset($o->permission) ? boolval($o->permission) : true);
-            $this->groups = $m['groups'] ?? method_exists($o, 'groups') ? $o->groups : [];
-
-            if ($this->checkPermission && !$this->isAllow()) {
-                $result = ['result' => 'error', 'message' => 'Отказано в доступе / Permission denied'];
+        if ( $method = $model->get($REQUEST_METHOD) ) { // property_exists
+            if ($model->groups && !$this->isAllow()) {
+                $result ['message'] = 'Отказано в доступе / Permission denied';
             } else {
-                if (!isset($m['action']) || !is_callable($m['action'])) {
-                    $result = ['result' => 'error', 'message' => "//$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI] action[$this->method] not supported"];
+                if (!is_callable($method['action'])) {
+                    $result['message'] = "//$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI] action[{$method['action']}] not supported";
                 } else {
-                    $this->action = $m['action'];
-                    $this->opt = $o;
+                    $this->params = array_merge($this->params, $extra);
+                    $arg = $this->arguments($method['action'], $model, $REQUEST_METHOD);
+                    if (count($this->error)) {
+                        $result ['message'] = $this->error;
+                    } else {
+                        $result = call_user_func_array($method['action']->bindTo($this), $arg);
+                    }
                 }
-                $result = $this->responseParams();
             }
         }
-
         return $result;
     }
 
@@ -202,35 +157,15 @@ class Rest extends \Application\Request
     }
 
     /**
-     * @function filter
+     * @function is_restParams
      *
-     * @param array $p
-     * @param callable|null $cb
-     * @return array
+     * @param mixed $a
+     * @return bool
      */
-    public function filter(array &$p, callable  $cb = null): array
+    public function is_restParams($a): bool
     {
-//        if (is_null($cb)) $cb = function($v){return $v !== false && !is_null($v) && ($v != '' || $v == '0'); };
-        if (is_null($cb)) $cb = function($v){return $v !== null && $v !== ''; };
-
-        return array_filter($p, $cb,ARRAY_FILTER_USE_BOTH);
-    }
-
-    /**
-     * @function paramsByKey
-     *
-     * @param $pattern
-     * @param $a
-     * @return array
-     */
-    protected function paramsByKey($pattern, $a)
-    {
-        if ( is_array($a) && \Application\Parameter::is_assoc($a) ) {
-            $keys = array_values(preg_grep($pattern, array_keys($a)));
-            if (count($keys)) return [$keys[0], $a[$keys[0]]];
-        }
-
-        return [null, null];
+        if (is_array($a)) foreach ($a as $v) if (is_array($v)) { return true; } else { return false; }
+        return false;
     }
 
     /**
@@ -240,93 +175,36 @@ class Rest extends \Application\Request
      * @param callable $fn
      * @return array
      */
-    protected function arguments(callable &$fn): array
+    protected function arguments(callable &$fn, $model, $method): array
     {
-        // $this->{$item->name} ::(__get) and $this now  extends \Application\Request wtih own properties su as PARAMS
-        return array_map(function ($item) {
-                return $item->value = $this->{$item->name};
+        return array_map(function ($item) use ($model, $method) {
+           $item->value = null;
+           switch ($item->name) {
+//               case str_starts_with($item->name, 'db'):
+               case substr($item->name, 0, 2 ) === 'db':
+                    try {
+                        $item->value = isset($this->{$item->name}) ? $this->{$item->name} : new \Application\PDA($this->cfg->{$item->name});
+                    } catch (\Exception $e) {
+                        $this->error[$item->name] = addslashes($e->getMessage());
+                    }
+                    break;
+               case 'error':
+                    $item->value = $this->error;
+                    break;
+               default:
+                    $item->value = $model->find($item->name, $method) ?? $model->{$item->name};
+                    if ($this->is_restParams($item->value)) {
+                        $requestPool = $this->params4rest($item->value);
+                        foreach ($item->value as $v) {
+                            (new \Application\Parameter($v, $requestPool))->setOwner($this);
+                        }
+                        $item->value = new \Application\Jsonb($requestPool, ['owner'=> $this, 'assoc'=>true, 'mode'=>\Application\Jsonb::JSON_ALWAYS]);
+                    }
+               }
+               return $item->value;
             },
             (new \ReflectionFunction($fn))->getParameters()
         );
-    }
-
-    /**
-     * PHPRoll Native property
-     *
-     * @param $name
-     * @return mixed
-     * @throws \Exception
-     */
-    public function __get ( $name )
-    {
-        $value = null;
-
-        switch (strtolower($name)) {
-            case str_starts_with($name, 'db'):
-                try {
-                    $value = isset($this->{$name}) ? $this->{$name} : new \Application\PDA($this->cfg->{$name});
-                } catch (\Exception $e) {
-                    $this->error[$name] = addslashes($e->getMessage());
-                    $value = null;
-                }
-                break;
-            case 'error':
-                $value = $this->error;
-                break;
-            default:
-                list($key, $params) = $this->paramsByKey("/^!*$name$/", $this->opt->get($this->method));
-                if (is_null($key)) list($key, $params) = $this->paramsByKey("/^!*$name$/", $this->opt->get());
-
-                if (is_array($params) && isset($params[0]) && is_array($params[0])) {
-                    $swap = $this->getParams($params, strpos($key, '!') !== false);
-                    $value = $this->restParams($params,$swap );
-                }  else  {
-                    $value = $this->opt->get($name);
-                }
-        }
-
-        return $value;
-    }
-
-    /**
-     * PHPRoll Native method
-     *
-     * @param $name
-     * @param $arguments
-     * @return mixed
-     */
-    public function __call($name, $arguments)
-    {
-        return call_user_func_array($this->opt->{$name}, $arguments);
-    }
-
-    /**
-     * PHPRoll Native method
-     *
-     * @param $method
-     * @return Jsonb|array|string[]
-     * @throws \Exception
-     */
-    public function __invoke(string $method)
-    {
-        return new \Application\Jsonb($this->getResult($this->cfg, $method), ['owner' => $this]);
-    }
-
-    /**
-     * Получаем значение параменных в запросе
-     *
-     */
-    protected function initParams()
-    {
-        if (strpos($_SERVER['CONTENT_TYPE'], 'multipart/form-data') !== FALSE) {
-            $params = $_POST;
-        } else if (strpos($_SERVER['CONTENT_TYPE'], 'json') !== FALSE) {
-            $params = json_decode($this->RAWRequet(), true);
-        } else {
-            mb_parse_str($this->RAWRequet(), $params);
-        }
-//        $this->params = new \Application\Jsonb($params, ['owner'=> $this, 'assoc'=>true, 'mode'=>\Application\Jsonb::JSON_ALWAYS]);
-        $this->params = $params;
     }
 
     /**
