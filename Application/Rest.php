@@ -195,10 +195,9 @@ class Rest extends \Application\Request
                     $item->value = $model->find($item->name, $method) ?? $model->{$item->name};
                     if ($this->is_restParams($item->value)) {
                         $requestPool = $this->params4rest($item->value);
-                        foreach ($item->value as $v) {
-                            (new \Application\Parameter($v, $requestPool))->setOwner($this);
-                        }
-                        $item->value = new \Application\Jsonb($requestPool, ['owner'=> $this, 'assoc'=>true, 'mode'=>\Application\Jsonb::JSON_ALWAYS]);
+                        foreach ($item->value as $v) { (new \Application\Parameter($v, $requestPool))->setOwner($this); }
+                        $p = \Application\Parameter::filter($requestPool, function($v) { return $v instanceof \Application\Parameter; });
+                        $item->value = new \Application\Jsonb($p, ['owner'=> $this, 'assoc'=>true, 'mode'=>\Application\Jsonb::JSON_ALWAYS]);
                     }
                }
                return $item->value;
