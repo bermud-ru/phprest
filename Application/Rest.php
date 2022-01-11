@@ -46,7 +46,8 @@ class Rest extends \Application\Request
         } else {
             mb_parse_str($this->RAWRequet(), $params);
         }
-        $this->params = $params;
+//        $this->params = $params;
+        $this->params = new \Application\Jsonb($params, ['owner'=> $this, 'assoc'=>true, 'mode'=>\Application\Jsonb::JSON_ALWAYS]);
     }
 
     /**
@@ -64,7 +65,7 @@ class Rest extends \Application\Request
                 if (is_array($v['name'])) {
                     $fields = array_flip($v['name']);
                     foreach ($fields as $k1 => $v1) {
-                        $value = $this->params[$k1];
+                        $value = $this->params->{$k1};
                         if ((is_null($value) || $value === '') && isset($v['default'])) {
                             $value = (is_callable($v['default'])) ? call_user_func_array($v['default']->bindTo($this), $this->arguments($v['default'])) : $v['default'];
                         }
@@ -78,8 +79,8 @@ class Rest extends \Application\Request
                         }
                         $params[] = array_merge($v, $opt);
                     }
-                } elseif (array_key_exists($v['name'], $this->params)) {
-                    $value = $this->params[$v['name']];
+                } else{
+                    $value = $this->params->{$v['name']};
                     if ((is_null($value) || $value === '') && isset($v['default'])) {
                         $value = (is_callable($v['default'])) ? call_user_func_array($v['default']->bindTo($this), $this->arguments($v['default'])) : $v['default'];
                     }
@@ -97,26 +98,27 @@ class Rest extends \Application\Request
      * @param array $opt
      * @return mixed
      */
-    public function model(array $cfg=[], $extra=[], $REQUEST_METHOD=null)
+    public function model(array $cfg=[], ?array $extra=null, $REQUEST_METHOD=null)
     {
         $REQUEST_METHOD = strtolower($REQUEST_METHOD ?? $_SERVER['REQUEST_METHOD']);
 //        $model = new \Application\Jsonb($cfg, ['owner' => $this]);
         $model = new \Application\Jsonb($cfg, ['owner'=> $this, 'assoc'=>true, 'mode'=>\Application\Jsonb::JSON_ALWAYS]);
-        $result = ['result'=> 'error', 'message' => 'Methods handler not defined!'];
+        $result = new \Application\Jsonb(['result'=> 'error', 'message' => 'Methods handler not defined!']);
 
         if ( $method = $model->get($REQUEST_METHOD) ) { // property_exists
-            if ($model->groups && !$this->isAllow()) {
-                $result ['message'] = 'Отказано в доступе / Permission denied';
+            if ($model->groups && !$this->isAllow($model)) {
+                $result->message = 'Отказано в доступе / Permission denied';
             } else {
-                if (!is_callable($method['action'])) {
-                    $result['message'] = "//$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI] action[{$method['action']}] not supported";
+                $method = new \Application\Jsonb($method, ['owner'=> $this, 'assoc'=>true, 'mode'=>\Application\Jsonb::JSON_ALWAYS]);
+                if (!is_callable($method->action)) {
+                    $result->message = "//$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI] action[{$method->action}] not supported";
                 } else {
-                    $this->params = array_merge($this->params, $extra);
-                    $arg = $this->arguments($method['action'], $model, $REQUEST_METHOD);
+                    if ($extra) $this->params->append($extra);
+                    $arg = $this->arguments($method->action, $model, $method, $REQUEST_METHOD);
                     if (count($this->error)) {
-                        $result ['message'] = $this->error;
+                        $result ->message = $this->error;
                     } else {
-                        $result = call_user_func_array($method['action']->bindTo($this), $arg);
+                        $result = call_user_func_array($method->action->bindTo($this), $arg);
                     }
                 }
             }
@@ -150,10 +152,10 @@ class Rest extends \Application\Request
      * @param string $field
      * @return bool
      */
-    protected function isAllow(): bool
+    protected function isAllow($model): bool
     {
-        if (isset($this->acl) && count($this->groups)) return $this->acl->in($this->groups);
-        return !boolval(count($this->groups));
+        if (isset($this->acl) && count($model->groups)) return $this->acl->in($model->groups);
+        return !boolval(count($model->groups));
     }
 
     /**
@@ -175,9 +177,9 @@ class Rest extends \Application\Request
      * @param callable $fn
      * @return array
      */
-    protected function arguments(callable &$fn, $model, $method): array
+    protected function arguments(callable &$fn, $model, $method, $req): array
     {
-        return array_map(function ($item) use ($model, $method) {
+        return array_map(function ($item) use ($model, $method, $req) {
            $item->value = null;
            switch ($item->name) {
 //               case str_starts_with($item->name, 'db'):
@@ -192,7 +194,7 @@ class Rest extends \Application\Request
                     $item->value = $this->error;
                     break;
                default:
-                    $item->value = $model->find($item->name, $method) ?? $model->{$item->name};
+                    $item->value = $method->{$item->name} ?? $model->{$item->name};
                     if ($this->is_restParams($item->value)) {
                         $requestPool = $this->params4rest($item->value);
                         foreach ($item->value as $v) { (new \Application\Parameter($v, $requestPool))->setOwner($this); }
