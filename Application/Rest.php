@@ -17,6 +17,8 @@ class Rest extends \Application\Request
     // Контейнер сообщений об ошибках
     public $error = [];
 
+    protected $COOKIE = null;
+
     /**
      * Конструктор
      *
@@ -135,14 +137,12 @@ class Rest extends \Application\Request
      */
     public function run(array $opt=[])
     {
-        $type = isset($opt['type']) ? isset($opt['type']) : 'json';
-        $result = ['result'=> 'error', 'message' => 'Methods handler not defined!'];
+        $result = new \Application\Jsonb(['result'=> 'error', 'message' => 'Methods handler not defined!']);
         if (isset($opt['route']) && is_callable($opt['route'])) {
-            $result = call_user_func_array($opt['route']->bindTo($this), @is_array($opt['params']) ? $opt['params'] : []);
+            $result = call_user_func_array($opt['route']->bindTo($this), isset($opt['params']) ? $opt['params'] : []);
         }
 
-        if (isset($result['type'])) { $type = strtolower($result['type']); unset($result['type']); }
-        return $this->response($type, $result);
+        return $this->response('json', $result);
     }
 
     /**
@@ -154,7 +154,10 @@ class Rest extends \Application\Request
      */
     protected function isAllow($model): bool
     {
-        if (isset($this->acl) && count($model->groups)) return $this->acl->in($model->groups);
+        if (count($model->groups)) {
+            $this->cfg->acl($this->cfg->roles);
+            return $this->acl->in($model->groups);
+        }
         return !boolval(count($model->groups));
     }
 
@@ -209,6 +212,30 @@ class Rest extends \Application\Request
     }
 
     /**
+     * COOKIE
+     *
+     * @param $param
+     * @param null $def
+     * @return mixed|null
+     */
+    public function cookie($param, $def = null)
+    {
+        if (is_null($this->COOKIE)) {
+            $this->COOKIE = [];
+            $cookies = $this->header['Cookies'];
+            if ($cookies && ($a = explode(";", $cookies))) {
+                foreach ($a as $i) {
+                    $pair = explode("=",trim($i));
+                    $this->COOKIE[trim(reset($pair))] = trim(end($pair));
+                }
+
+            }
+        }
+
+        return isset($this->COOKIE[$param]) ? $this->COOKIE[$param] : $def;
+    }
+
+    /**
      * Генерация заголовка ответа и форматирование кода ответа
      * @param $type
      * @param $params
@@ -216,12 +243,13 @@ class Rest extends \Application\Request
      */
     public function response(string $type, $params = null)
     {
-        $code = $params['code'] ?? 200;
+        $code = 200;
         if (array_key_exists($code, \Application\PHPRoll::HTTP_RESPONSE_CODE))  {
             header("HTTP/1.1 {$code} " . \Application\PHPRoll::HTTP_RESPONSE_CODE[$code], false);
         }
         http_response_code(intval($code));
         header('Expires: '. date('r'), false);
+//        header('Access-Control-Allow-Credentials: true');
 
         if (isset($_SERVER['HTTP_USER_AGENT']) && strstr($_SERVER['HTTP_USER_AGENT'], 'MSIE') == false) {
             header('Cache-Control: no-cache', false);
