@@ -17,6 +17,7 @@ class Rest extends \Application\Request
     // Контейнер сообщений об ошибках
     public $error = [];
 
+    protected $owner = null;
     protected $COOKIE = null;
 
     /**
@@ -30,6 +31,7 @@ class Rest extends \Application\Request
         if (is_array($params)) {
             parent::__construct($params, $header);
         } else {
+            $this->owner = $params;
             foreach (['cfg','uri','header','params','acl'] as $property)
                 if (property_exists($params,$property)) $this->{$property} = $params->{$property};
         }
@@ -203,6 +205,8 @@ class Rest extends \Application\Request
                         foreach ($item->value as $v) { (new \Application\Parameter($v, $requestPool))->setOwner($this); }
                         $p = \Application\Parameter::filter($requestPool, function($v) { return $v instanceof \Application\Parameter; });
                         $item->value = new \Application\Jsonb($p, ['owner'=> $this, 'assoc'=>true, 'mode'=>\Application\Jsonb::JSON_ALWAYS]);
+                    } elseif ($this->owner && property_exists($this->owner,$item->name)) {
+                        $item->value = $this->owner->{$item->name};
                     }
                }
                return $item->value;
