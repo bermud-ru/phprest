@@ -61,7 +61,7 @@ class Rest extends \Application\Request
      * @param array $params
      * @return array
      */
-    protected function params4rest(array $params): array
+    protected function params4rest(array $params, $model, $method, $req): array
     {
         $result = [];
         if (count($params)) {
@@ -86,7 +86,7 @@ class Rest extends \Application\Request
                 } else{
                     $value = $this->params->{$v['name']};
                     if ((is_null($value) || $value === '') && isset($v['default'])) {
-                        $value = (is_callable($v['default'])) ? call_user_func_array($v['default']->bindTo($this), $this->arguments($v['default'])) : $v['default'];
+                        $value = (is_callable($v['default'])) ? call_user_func_array($v['default']->bindTo($this), $this->arguments($v['default'],$model, $method, $req)) : $v['default'];
                     }
                     $result[(isset($v['alias']) ? $v['alias'] : $v['name'])] = $value;
                 }
@@ -157,7 +157,7 @@ class Rest extends \Application\Request
     protected function isAllow($model): bool
     {
         if (count($model->groups)) {
-            $this->cfg->acl($this->cfg->roles);
+            if (is_null($this->acl)) $this->cfg->acl($this->cfg->roles);
             return $this->acl->in($model->groups);
         }
         return !boolval(count($model->groups));
@@ -187,7 +187,6 @@ class Rest extends \Application\Request
         return array_map(function ($item) use ($model, $method, $req) {
            $item->value = null;
            switch ($item->name) {
-//               case str_starts_with($item->name, 'db'):
                case substr($item->name, 0, 2 ) === 'db':
                     try {
                         $item->value = isset($this->{$item->name}) ? $this->{$item->name} : new \Application\PDA($this->cfg->{$item->name});
@@ -195,18 +194,16 @@ class Rest extends \Application\Request
                         $this->error[$item->name] = addslashes($e->getMessage());
                     }
                     break;
-               case 'error':
-                    $item->value = $this->error;
-                    break;
                default:
                     $item->value = $method->{$item->name} ?? $model->{$item->name};
+
                     if ($this->is_restParams($item->value)) {
-                        $requestPool = $this->params4rest($item->value);
+                        $requestPool = $this->params4rest($item->value, $model, $method, $req);
                         foreach ($item->value as $v) { (new \Application\Parameter($v, $requestPool))->setOwner($this); }
                         $p = \Application\Parameter::filter($requestPool, function($v) { return $v instanceof \Application\Parameter; });
                         $item->value = new \Application\Jsonb($p, ['owner'=> $this, 'assoc'=>true, 'mode'=>\Application\Jsonb::JSON_ALWAYS]);
-                    } elseif ($this->owner && property_exists($this->owner,$item->name)) {
-                        $item->value = $this->owner->{$item->name};
+                    } else {
+                        $item->value = $this->{$item->name};
                     }
                }
                return $item->value;
@@ -214,6 +211,35 @@ class Rest extends \Application\Request
             (new \ReflectionFunction($fn))->getParameters()
         );
     }
+
+    /**
+     *  Native property
+     *
+     * @param $name
+     * @return mixed
+     * @throws \Exception
+     */
+    public function __get ($name)
+    {
+        if ($this->owner && property_exists($this->owner, $name)) {
+            return $this->owner->{$name};
+        }
+        return  null;
+    }
+
+    /**
+     * Native method
+     *
+     * @param $name
+     * @param $arguments
+     * @return mixed
+     */
+    public function __call($name, $arguments)
+    {
+        if ($this->owner && method_exists($this->pdo, $name)) return call_user_func_array([$this, $name], $arguments);
+        return null;
+    }
+
 
     /**
      * COOKIE
@@ -232,10 +258,8 @@ class Rest extends \Application\Request
                     $pair = explode("=",trim($i));
                     $this->COOKIE[trim(reset($pair))] = trim(end($pair));
                 }
-
             }
         }
-
         return isset($this->COOKIE[$param]) ? $this->COOKIE[$param] : $def;
     }
 
