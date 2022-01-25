@@ -281,6 +281,7 @@ class Rest extends \Application\Request
         http_response_code(intval($code));
         header('Expires: '. date('r'), false);
         header('Access-Control-Allow-Credentials: true');
+        header('X-Powered-By: Roll FW '.\Application\PHPRoll::VERSION,true);
 
         if (isset($_SERVER['HTTP_USER_AGENT']) && strstr($_SERVER['HTTP_USER_AGENT'], 'MSIE') == false) {
             header('Cache-Control: no-cache', false);
