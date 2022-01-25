@@ -33,7 +33,8 @@ class Rest extends \Application\Request
         } else {
             $this->owner = $params;
             foreach (['cfg','uri','header','params','acl'] as $property)
-                if (property_exists($params,$property)) $this->{$property} = $params->{$property};
+//                if (property_exists($params,$property)) $this->{$property} = $params->{$property};
+                if (property_exists($params,$property)) unset($this->{$property});
         }
     }
 
@@ -236,7 +237,9 @@ class Rest extends \Application\Request
      */
     public function __call($name, $arguments)
     {
-        if ($this->owner && method_exists($this->pdo, $name)) return call_user_func_array([$this, $name], $arguments);
+        if ($this->owner && method_exists($this->owner, $name)) {
+            return call_user_func_array($this->owner->{$name}->bindTo($this), $arguments);
+        }
         return null;
     }
 
@@ -277,7 +280,7 @@ class Rest extends \Application\Request
         }
         http_response_code(intval($code));
         header('Expires: '. date('r'), false);
-//        header('Access-Control-Allow-Credentials: true');
+        header('Access-Control-Allow-Credentials: true');
 
         if (isset($_SERVER['HTTP_USER_AGENT']) && strstr($_SERVER['HTTP_USER_AGENT'], 'MSIE') == false) {
             header('Cache-Control: no-cache', false);
