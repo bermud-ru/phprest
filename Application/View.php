@@ -126,6 +126,46 @@ EOT;
         return strtoupper($type) == strtoupper($_SERVER['REQUEST_METHOD']);
     }
 
+    /**
+     *  Native property
+     *
+     * @param $name
+     * @return mixed
+     * @throws \Exception
+     */
+    public function __get ($name)
+    {
+        switch ($name) {
+            case substr($name, 0, 2) === 'db':
+                try {
+                    return $this->{$name} = new \Application\PDA($this->cfg->{$name});
+                } catch (\Exception $e) {
+                    $this->error[$name] = addslashes($e->getMessage());
+                }
+                break;
+            case "acl":
+                return $this->cfg->acl($this->cfg->roles);
+            default:
+                if ($this->cfg->{$name})  return $this->cfg->{$name};
+        }
+        throw new \Exception(__CLASS__."->$name property not foudnd!");
+    }
+
+    /**
+     * Native method
+     *
+     * @param $name
+     * @param $arguments
+     * @return mixed
+     */
+    public function __call($name, $arguments)
+    {
+        if ($this->cfg->{$name} && is_callable($this->cfg->{$name})) {
+            return call_user_func_array($this->cfg->{$name}->bindTo($this), $arguments);
+        }
+        throw new \Exception(__CLASS__."->$name(...) method not foudnd");
+    }
+
 }
 
 ?>

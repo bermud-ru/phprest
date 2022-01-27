@@ -158,7 +158,6 @@ class Rest extends \Application\Request
     protected function isAllow($model): bool
     {
         if (count($model->groups)) {
-            if (is_null($this->acl)) $this->cfg->acl($this->cfg->roles);
             return $this->acl->in($model->groups);
         }
         return !boolval(count($model->groups));
@@ -189,22 +188,23 @@ class Rest extends \Application\Request
            $item->value = null;
            switch ($item->name) {
                case substr($item->name, 0, 2 ) === 'db':
+               case "acl":
                     try {
-                        $item->value = isset($this->{$item->name}) ? $this->{$item->name} : new \Application\PDA($this->cfg->{$item->name});
+                        $item->value = $this->{$item->name};
                     } catch (\Exception $e) {
                         $this->error[$item->name] = addslashes($e->getMessage());
                     }
                     break;
                default:
-                    $item->value = $method->{$item->name} ?? $model->{$item->name};
-
-                    if ($this->is_restParams($item->value)) {
-                        $requestPool = $this->params4rest($item->value, $model, $method, $req);
-                        foreach ($item->value as $v) { (new \Application\Parameter($v, $requestPool))->setOwner($this); }
+                    $value = $method->{$item->name} ?? $model->{$item->name};
+                    if ($this->is_restParams($value)) {
+                        $requestPool = $this->params4rest($value, $model, $method, $req);
+                        foreach ($value as $v) { (new \Application\Parameter($v, $requestPool))->setOwner($this); }
                         $p = \Application\Parameter::filter($requestPool, function($v) { return $v instanceof \Application\Parameter; });
                         $item->value = new \Application\Jsonb($p, ['owner'=> $this, 'assoc'=>true, 'mode'=>\Application\Jsonb::JSON_ALWAYS]);
                     } else {
-                        $item->value = $this->{$item->name};
+                        if (is_callable($value)) $item->value = $value->bindTo($this);
+                        $item->value = $value;
                     }
                }
                return $item->value;
@@ -225,7 +225,20 @@ class Rest extends \Application\Request
         if ($this->owner && property_exists($this->owner, $name)) {
             return $this->owner->{$name};
         }
-        return  null;
+
+        switch ($name) {
+            case substr($name, 0, 2) === 'db':
+                try {
+                    return $this->{$name} = new \Application\PDA($this->cfg->{$name});
+                } catch (\Exception $e) {
+                    $this->error[$name] = addslashes($e->getMessage());
+                }
+                break;
+            case "acl":
+                return $this->cfg->acl($this->cfg->roles);
+            default:
+        }
+        throw new \Exception(__CLASS__."->$name property not foudnd!");
     }
 
     /**
@@ -240,9 +253,8 @@ class Rest extends \Application\Request
         if ($this->owner && method_exists($this->owner, $name)) {
             return call_user_func_array($this->owner->{$name}->bindTo($this), $arguments);
         }
-        return null;
+        throw new \Exception(__CLASS__."->$name(...) method not foudnd");
     }
-
 
     /**
      * COOKIE
@@ -334,6 +346,20 @@ class Rest extends \Application\Request
         }
 
         return $context;
+    }
+
+    /**
+     * @function crash
+     * Crash handler
+     *
+     * @param \Exception $e
+     *
+     */
+    function crash(\Exception $e){
+        echo "<pre>";
+        var_dump($e);exit;
+        echo $this->response('json', ['result' => 'error', 'code' => 500, 'message' => $e->getMessage()]);
+        exit;
     }
 }
 ?>
