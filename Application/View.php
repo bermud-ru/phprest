@@ -160,7 +160,7 @@ EOT;
      */
     public function __call($name, $arguments)
     {
-        if ($this->cfg->{$name} && is_callable($this->cfg->{$name})) {
+        if (is_callable($this->cfg->{$name})) {
             return call_user_func_array($this->cfg->{$name}->bindTo($this), $arguments);
         }
         throw new \Exception(__CLASS__."->$name(...) method not foudnd");

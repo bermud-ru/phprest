@@ -189,11 +189,7 @@ class Rest extends \Application\Request
            switch ($item->name) {
                case substr($item->name, 0, 2 ) === 'db':
                case "acl":
-                    try {
                         $item->value = $this->{$item->name};
-                    } catch (\Exception $e) {
-                        $this->error[$item->name] = addslashes($e->getMessage());
-                    }
                     break;
                default:
                     $value = $method->{$item->name} ?? $model->{$item->name};
@@ -204,7 +200,7 @@ class Rest extends \Application\Request
                         $item->value = new \Application\Jsonb($p, ['owner'=> $this, 'assoc'=>true, 'mode'=>\Application\Jsonb::JSON_ALWAYS]);
                     } else {
                         if (is_callable($value)) $item->value = $value->bindTo($this);
-                        $item->value = $value;
+                        else $item->value = $value;
                     }
                }
                return $item->value;
@@ -224,9 +220,7 @@ class Rest extends \Application\Request
     {
         if ($this->owner && property_exists($this->owner, $name)) {
             return $this->owner->{$name};
-        }
-
-        switch ($name) {
+        } else switch ($name) {
             case substr($name, 0, 2) === 'db':
                 try {
                     return $this->{$name} = new \Application\PDA($this->cfg->{$name});
@@ -252,6 +246,8 @@ class Rest extends \Application\Request
     {
         if ($this->owner && method_exists($this->owner, $name)) {
             return call_user_func_array($this->owner->{$name}->bindTo($this), $arguments);
+        } elseif (is_callable($this->cfg->{$name})) {
+            return call_user_func_array($this->cfg->{$name}->bindTo($this), $arguments);
         }
         throw new \Exception(__CLASS__."->$name(...) method not foudnd");
     }
