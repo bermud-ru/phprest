@@ -136,8 +136,8 @@ EOT;
     static public function php2js($v, $def='null')
     {
         if ($v === null || $v === '') return $def;
-        $jsParam = \Application\Parameter::ize($v,\Application\PDA::QUERY_STRING_QUOTES|\PDO::NULL_EMPTY_STRING);
-        return "str2json($jsParam, $def)";
+        $jsParam = \Application\Parameter::ize($v,\Application\PDA::QUERY_STRING_QUOTES|\PDO::NULL_EMPTY_STRING|\Application\PDA::ARRAY_STRINGIFY);
+        return "str2json($jsParam)";
     }
 
     /**
