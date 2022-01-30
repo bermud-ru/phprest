@@ -127,6 +127,19 @@ EOT;
     }
 
     /**
+     * @function php2js
+     *
+     * @param $v
+     * @param string $def
+     * @return string
+     */
+    static public function php2js($v, $def='null')
+    {
+        $jsParam = \Application\Parameter::ize($v,\Application\PDA::QUERY_STRING_QUOTES|\PDO::NULL_EMPTY_STRING);
+        return "str2json($jsParam, $def)";
+    }
+
+    /**
      *  Native property
      *
      * @param $name
