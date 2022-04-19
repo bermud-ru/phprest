@@ -16,7 +16,7 @@ namespace Application;
 
 class ACL
 {
-    protected $opt = [];
+//    protected $opt = [];
     protected $user_id = null;
     protected $group_idx = [];
     protected $groups = [];
@@ -43,7 +43,7 @@ class ACL
         }
         $this->groups = isset($opt['groups']) ? $opt['groups'] : [];
         $this->user_object = $user_object;
-        $this->opt = $opt;
+//        $this->opt = $opt;
         $app->acl = $this;
     }
 
@@ -128,7 +128,8 @@ class ACL
     public function __get ($name)
     {
         if (isset($this->user_object[$name])) {
-            return \Application\Parameter::ize($this->user_object[$name]);
+            if (is_object($this->user_object[$name])) return $this->user_object[$name];
+            return $this->user_object[$name] = \Application\Parameter::ize($this->user_object[$name], \Application\PDA::STRING_TO_OBJECT);
         }
         return null;
     }
