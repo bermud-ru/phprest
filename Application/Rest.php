@@ -255,23 +255,31 @@ class Rest extends \Application\Request
     /**
      * COOKIE
      *
-     * @param $param
-     * @param null $def
+     * @param string $param
+     * @param int $opt
      * @return mixed|null
      */
-    public function cookie($param, $def = null)
+    public function cookie( string $param, int $opt = \Application\Request::DEFAULT)
     {
         if (is_null($this->COOKIE)) {
             $this->COOKIE = [];
             $cookies = $this->header['Cookies'];
             if ($cookies && ($a = explode(";", $cookies))) {
                 foreach ($a as $i) {
-                    $pair = explode("=",trim($i));
-                    $this->COOKIE[trim(reset($pair))] = trim(end($pair));
+                    $pair = explode("=", trim($i));
+                    $key=trim(reset($pair));
+                    $p = trim(end($pair));
+                    $this->COOKIE[$key] = null;
+                    if ($opt & \Application\Request::BASE64) $this->COOKIE[$key] = base64_decode($p);
+                    if ($opt & \Application\Request::OBJECT) {
+                        $p = json_decode($this->COOKIE[$key] ?? $p, false, 512, JSON_INVALID_UTF8_IGNORE);
+                        if (json_last_error() === JSON_ERROR_NONE) $this->COOKIE[$key] = null;
+                    }
+                    if ($opt === \Application\Request::DEFAULT) $this->COOKIE[$key] = \Application\Parameter::ize($p);
                 }
             }
         }
-        return isset($this->COOKIE[$param]) ? $this->COOKIE[$param] : $def;
+        return isset($this->COOKIE[$param]) ? $this->COOKIE[$param] : null;
     }
 
     /**
