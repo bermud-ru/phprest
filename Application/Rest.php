@@ -118,7 +118,7 @@ class Rest extends \Application\Request
                 if (!is_callable($method->action)) {
                     $result->message = "//$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI] action[{$method->action}] not supported";
                 } else {
-                    if ($extra) $this->params->append($extra);
+                    if ($extra) $this->params->merge($extra);
                     $arg = $this->arguments($method->action, $model, $method, $REQUEST_METHOD);
                     if (count($this->error)) {
                         $result ->message = $this->error;
