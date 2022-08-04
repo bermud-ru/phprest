@@ -33,8 +33,7 @@ class Rest extends \Application\Request
         } else {
             $this->owner = $params;
             foreach (['cfg','uri','header','params','acl'] as $property)
-//                if (property_exists($params,$property)) $this->{$property} = $params->{$property};
-                if (property_exists($params,$property)) unset($this->{$property});
+                if (property_exists($params, $property)) unset($this->{$property});
         }
     }
 
@@ -51,7 +50,7 @@ class Rest extends \Application\Request
         } else {
             mb_parse_str($this->RAWRequet(), $params);
         }
-//        $this->params = $params;
+
         $this->params = new \Application\Jsonb($params, ['owner'=> $this, 'assoc'=>true, 'mode'=>\Application\Jsonb::JSON_ALWAYS]);
     }
 
@@ -59,18 +58,22 @@ class Rest extends \Application\Request
      * @function getParams
      * Получаем массив Поле-Значение REST action
      *
-     * @param array $params
+     * @param array $field
+     * @param object \Application\Jsonb $model
+     * @param object \Application\Jsonb $method
+     * @param object \Application\Jsonb $p
      * @return array
      */
-    protected function params4rest(array $params, $model, $method, $req): array
+    protected function params4rest(array $fields, $model, $method, \Application\Jsonb $p=null): array
     {
         $result = [];
-        if (count($params)) {
-            foreach ($params as $k => $v) {
+        $params = is_null($p) ? $this->params : $p;;
+        if (count($fields)) {
+            foreach ($fields as $k => $v) {
                 if (is_array($v['name'])) {
                     $fields = array_flip($v['name']);
                     foreach ($fields as $k1 => $v1) {
-                        $value = $this->params->{$k1};
+                        $value = $params->{$k1};
                         if ((is_null($value) || $value === '') && isset($v['default'])) {
                             $value = (is_callable($v['default'])) ? call_user_func_array($v['default']->bindTo($this), $this->arguments($v['default'])) : $v['default'];
                         }
@@ -82,12 +85,12 @@ class Rest extends \Application\Request
                         } else {
                             $result[$k1] = $value;
                         }
-                        $params[] = array_merge($v, $opt);
+                        $fields[] = array_merge($v, $opt);
                     }
                 } else{
-                    $value = $this->params->{$v['name']};
+                    $value = $params->{$v['name']};
                     if ((is_null($value) || $value === '') && isset($v['default'])) {
-                        $value = (is_callable($v['default'])) ? call_user_func_array($v['default']->bindTo($this), $this->arguments($v['default'],$model, $method, $req)) : $v['default'];
+                        $value = (is_callable($v['default'])) ? call_user_func_array($v['default']->bindTo($this), $this->arguments($v['default'],$model, $method)) : $v['default'];
                     }
                     $result[(isset($v['alias']) ? $v['alias'] : $v['name'])] = $value;
                 }
@@ -100,13 +103,14 @@ class Rest extends \Application\Request
     /**
      * @function model
      *
-     * @param array $opt
+     * @param array $cfg
+     * @param ?array $params
+     * @param string $REQUEST_METHOD
      * @return mixed
      */
-    public function model(array $cfg=[], ?array $extra=null, $REQUEST_METHOD=null)
+    public function model(array $cfg=[], $params=null, string $REQUEST_METHOD=null)
     {
         $REQUEST_METHOD = strtolower($REQUEST_METHOD ?? $_SERVER['REQUEST_METHOD']);
-//        $model = new \Application\Jsonb($cfg, ['owner' => $this]);
         $model = new \Application\Jsonb($cfg, ['owner'=> $this, 'assoc'=>true, 'mode'=>\Application\Jsonb::JSON_ALWAYS]);
         $result = new \Application\Jsonb(['result'=> 'error', 'message' => 'Methods handler not defined!']);
 
@@ -118,10 +122,18 @@ class Rest extends \Application\Request
                 if (!is_callable($method->action)) {
                     $result->message = "//$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI] action[{$method->action}] not supported";
                 } else {
-                    if ($extra) $this->params->merge($extra);
-                    $arg = $this->arguments($method->action, $model, $method, $REQUEST_METHOD);
+                    if (is_null($params)) {
+                        $arg = $this->arguments($method->action, $model, $method);
+                    } elseif (is_array($params)) {
+                        $this->params->merge($params);
+                        $arg = $this->arguments($method->action, $model, $method);
+                    } else {
+                        $p = is_object($params) ? $params : ($this->owner ? $this->owner->initParams() : $this->initParams());
+                        $arg = $this->arguments($method->action, $model, $method, $p);
+                    }
+
                     if (count($this->error)) {
-                        $result ->message = $this->error;
+                        $result->message = $this->error;
                     } else {
                         $result = call_user_func_array($method->action->bindTo($this), $arg);
                     }
@@ -180,11 +192,14 @@ class Rest extends \Application\Request
      * Prepare args for closure
      *
      * @param callable $fn
+     * @param object \Application\Jsonb $model
+     * @param object \Application\Jsonb $method
+     * @param object \Application\Jsonb $params
      * @return array
      */
-    protected function arguments(callable &$fn, $model, $method, $req): array
+    protected function arguments(callable &$fn, $model, $method, $params=null): array
     {
-        return array_map(function ($item) use ($model, $method, $req) {
+        return array_map(function ($item) use ($model, $method, $params) {
            $item->value = null;
            switch ($item->name) {
                case substr($item->name, 0, 2 ) === 'db':
@@ -194,7 +209,7 @@ class Rest extends \Application\Request
                default:
                     $value = $method->{$item->name} ?? $model->{$item->name};
                     if ($this->is_restParams($value)) {
-                        $requestPool = $this->params4rest($value, $model, $method, $req);
+                        $requestPool = $this->params4rest($value, $model, $method, $params);
                         foreach ($value as $v) { (new \Application\Parameter($v, $requestPool))->setOwner($this); }
                         $p = \Application\Parameter::filter($requestPool, function($v) { return $v instanceof \Application\Parameter; });
                         $item->value = new \Application\Jsonb($p, ['owner'=> $this, 'assoc'=>true, 'mode'=>\Application\Jsonb::JSON_ALWAYS]);
