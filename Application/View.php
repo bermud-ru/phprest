@@ -75,7 +75,7 @@ EOT;
             }
         } catch (\Application\ContextException $e) {
             if ($this->is_jscript) {
-                echo 'console.error(\'PHP Exception: \'+decodeURIComponent(\''.rawurlencode($e->getMessage()).'\'));';
+                \Application\IO::console_error($e,['','']);
             } else {
                 return $this->context($this->cfg->str('404'), $option);
             }
@@ -138,7 +138,7 @@ EOT;
         if ($v === null || $v === '') return $def;
         $data = \Application\Parameter::ize($v,\Application\PDA::QUERY_STRING_QUOTES|\PDO::NULL_EMPTY_STRING|\Application\PDA::ARRAY_STRINGIFY);
         if (is_array($v) && isset($v['result']) && in_array($v['result'], ['error','warn']))
-            return "function() { console.{$v['result']}('{$v['message']}'); return str2json($data) }();";
+            return "function() { console.{$v['result']}(`{$v['message']}`); return str2json($data) }();";
 
         return "str2json($data)";
     }
