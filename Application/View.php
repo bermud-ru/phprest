@@ -137,6 +137,7 @@ EOT;
     {
         if ($v === null || $v === '') return $def;
         $data = \Application\Parameter::ize($v,\Application\PDA::QUERY_STRING_QUOTES|\PDO::NULL_EMPTY_STRING|\Application\PDA::ARRAY_STRINGIFY);
+        $data = str_replace('\"', '&quot;' , $data);
         if (count($stat) && is_array($v) && isset($v['result']) && in_array($v['result'], $stat))
             return "function() { console.{$v['result']}(`{$v['message']}`); return str2json($data) }();";
 
