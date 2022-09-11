@@ -67,7 +67,7 @@ class Rest extends \Application\Request
     protected function params4rest(array $fields, $model, $method, \Application\Jsonb $p=null): array
     {
         $result = [];
-        $params = is_null($p) ? $this->params : $p;;
+        $params = is_null($p) ? $this->params : $p;
         if (count($fields)) {
             foreach ($fields as $k => $v) {
                 if (is_array($v['name'])) {
@@ -128,8 +128,7 @@ class Rest extends \Application\Request
                         $this->params->merge($params);
                         $arg = $this->arguments($method->action, $model, $method);
                     } else {
-                        $p = is_object($params) ? $params : ($this->owner ? $this->owner->initParams() : $this->initParams());
-                        $arg = $this->arguments($method->action, $model, $method, $p);
+                        $arg = $this->arguments($method->action, $model, $method, $params);
                     }
 
                     if (count($this->error)) {
