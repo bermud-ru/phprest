@@ -55,6 +55,24 @@ class Rest extends \Application\Request
     }
 
     /**
+     * @param \Application\Jsonb $a
+     * @param $exception
+     * @return array
+     */
+    public function excludeEmpty(\Application\Jsonb $a, array $exception = []):array
+    {
+        if (boolval($exception)) {
+            $p = $this->params;
+            $exception = array_intersect($exception, array_keys($p()));
+            return array_filter($a(), function ($v, $k) use ($exception) {
+                $p = \Application\Parameter::ize($v, \PDO::NULL_EMPTY_STRING);
+                return !is_null($p) && $p !== '' || in_array($k, $exception);
+            }, \ARRAY_FILTER_USE_BOTH);
+        }
+        return $a(true);
+    }
+
+    /**
      * @function getParams
      * Получаем массив Поле-Значение REST action
      *
