@@ -12,6 +12,7 @@
  */
 namespace Application;
 
+#[\AllowDynamicProperties]
 class Rest extends \Application\Request
 {
     // Контейнер сообщений об ошибках
@@ -157,6 +158,7 @@ class Rest extends \Application\Request
                 }
             }
         }
+
         return $result;
     }
 
@@ -257,14 +259,15 @@ class Rest extends \Application\Request
                 try {
                     return $this->{$name} = new \Application\PDA($this->cfg->{$name});
                 } catch (\Exception $e) {
-                    $this->error[$name] = addslashes($e->getMessage());
+                    $this->error[$name] = $e->getMessage();
                 }
                 break;
             case "acl":
                 return $this->cfg->acl($this->cfg->roles);
             default:
         }
-        throw new \Exception(__CLASS__."->$name property not foudnd!");
+
+        if (empty($this->error)) throw new \Exception(__CLASS__."->$name property not foudnd!");
     }
 
     /**
@@ -281,7 +284,8 @@ class Rest extends \Application\Request
         } elseif (is_callable($this->cfg->{$name})) {
             return call_user_func_array($this->cfg->{$name}->bindTo($this), $arguments);
         }
-        throw new \Exception(__CLASS__."->$name(...) method not foudnd");
+
+        if (empty($this->error)) throw new \Exception(__CLASS__."->$name(...) method not foudnd");
     }
 
     /**
@@ -311,6 +315,7 @@ class Rest extends \Application\Request
                 }
             }
         }
+
         return isset($this->COOKIE[$param]) ? $this->COOKIE[$param] : null;
     }
 
@@ -392,8 +397,6 @@ class Rest extends \Application\Request
      *
      */
     function crash(\Exception $e){
-        echo "<pre>";
-        var_dump($e);exit;
         echo $this->response('json', ['result' => 'error', 'code' => 500, 'message' => $e->getMessage()]);
         exit;
     }
