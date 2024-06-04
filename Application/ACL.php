@@ -13,7 +13,7 @@
 
 namespace Application;
 
-
+#[AllowDynamicProperties]
 class ACL
 {
 //    protected $opt = [];

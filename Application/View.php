@@ -12,6 +12,7 @@
 
 namespace Application;
 
+#[AllowDynamicProperties]
 class View extends \Application\PHPRoll
 {
     private $is_jscript = false;

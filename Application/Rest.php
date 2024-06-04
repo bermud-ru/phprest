@@ -210,6 +210,7 @@ class Rest extends \Application\Request
      * @function arguments
      * Prepare args for closure
      *
+     * @var object $value
      * @param callable $fn
      * @param object \Application\Jsonb $model
      * @param object \Application\Jsonb $method
@@ -219,25 +220,30 @@ class Rest extends \Application\Request
     protected function arguments(callable &$fn, $model, $method, $params=null): array
     {
         return array_map(function ($item) use ($model, $method, $params) {
-           $item->value = null;
+        //    $item->value = null;
            switch ($item->name) {
                case substr($item->name, 0, 2 ) === 'db':
                case "acl":
-                        $item->value = $this->{$item->name};
-                    break;
+                        // $item->value = $this->{$item->name};
+                        return $this->{$item->name};
+                    // break;
                default:
                     $value = $method->{$item->name} ?? $model->{$item->name};
                     if ($this->is_restParams($value)) {
                         $requestPool = $this->params4rest($value, $model, $method, $params);
                         foreach ($value as $v) { (new \Application\Parameter($v, $requestPool))->setOwner($this); }
                         $p = \Application\Parameter::filter($requestPool, function($v) { return $v instanceof \Application\Parameter; });
-                        $item->value = new \Application\Jsonb($p, ['owner'=> $this, 'assoc'=>true, 'mode'=>\Application\Jsonb::JSON_ALWAYS]);
+                        // $item->value = new \Application\Jsonb($p, ['owner'=> $this, 'assoc'=>true, 'mode'=>\Application\Jsonb::JSON_ALWAYS]);
+                        return new \Application\Jsonb($p, ['owner'=> $this, 'assoc'=>true, 'mode'=>\Application\Jsonb::JSON_ALWAYS]);
                     } else {
-                        if (is_callable($value)) $item->value = $value->bindTo($this);
-                        else $item->value = $value;
+                        // if (is_callable($value)) $item->value = $value->bindTo($this);
+                        // else $item->value = $value;
+                        if (is_callable($value)) return $value->bindTo($this);
+                        return $value;
                     }
                }
-               return $item->value;
+            //    return $item->value;
+               return null;
             },
             (new \ReflectionFunction($fn))->getParameters()
         );
